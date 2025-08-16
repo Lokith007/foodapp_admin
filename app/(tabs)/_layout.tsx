@@ -22,20 +22,21 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="Menu" 
-        options={{
-          title: 'Menu',
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="food-outline" color={color} size={30} />
-          ),
-        }}
-      />
+  name="Menu" 
+  options={{
+    title: 'Menu',
+    tabBarIcon: () => (
+      <MaterialCommunityIcons name="food-outline" color="#E95322" size={30} />
+    ),
+  }}
+/>
+
       <Tabs.Screen
         name="Orders" 
         options={{
           title: 'Orders',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="silverware-fork-knife" color={color} size={30} />
+            <MaterialCommunityIcons name="silverware-fork-knife" color="#E95322" size={30} />
           ),
         }}
       />
@@ -44,7 +45,7 @@ export default function TabsLayout() {
         options={{
           title: 'History',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="history" color={color} size={30} />
+            <MaterialCommunityIcons name="history" color="#E95322" size={30} />
           ),
         }}
       />
@@ -53,7 +54,7 @@ export default function TabsLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color }) => (
-            <Ionicons name="person-outline" color={color} size={30} />
+            <Ionicons name="person-outline" color="#E95322" size={30} />
           ),
         }}
       />

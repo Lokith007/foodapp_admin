@@ -66,9 +66,12 @@ export default function SignIn() {
         </View>
 
         {/* Login Button */}
-        <TouchableOpacity className="w-full bg-orange-500 py-4 rounded-full shadow-lg">
-          <Text className="text-white font-bold text-lg text-center">Log In</Text>
-        </TouchableOpacity>
+        <TouchableOpacity
+      className="w-full bg-orange-500 py-4 rounded-full shadow-lg"
+      onPress={() => router.replace("/(tabs)/Menu")}
+    >
+      <Text className="text-white font-bold text-lg text-center">Log In</Text>
+    </TouchableOpacity>
 
         {/* Don't have account? */}
         <View className="mt-6 flex-row justify-center">
