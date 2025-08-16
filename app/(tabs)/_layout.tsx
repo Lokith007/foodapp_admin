@@ -1,7 +1,5 @@
 // tabs/_layout.tsx
 import { Tabs } from 'expo-router'
-import Icon from 'react-native-vector-icons/Feather'
-import { Pressable, Animated } from 'react-native'
 import React, { useRef } from 'react'
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -24,7 +22,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="Menu" // matches food.tsx
+        name="Menu" 
         options={{
           title: 'Menu',
           tabBarIcon: ({ color }) => (
@@ -33,7 +31,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="Orders" // matches reorder.tsx
+        name="Orders" 
         options={{
           title: 'Orders',
           tabBarIcon: ({ color }) => (
@@ -42,7 +40,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="History" // matches history.tsx
+        name="History" 
         options={{
           title: 'History',
           tabBarIcon: ({ color }) => (
@@ -51,7 +49,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile" // matches profile.tsx
+        name="profile" 
         options={{
           title: 'Profile',
           tabBarIcon: ({ color }) => (

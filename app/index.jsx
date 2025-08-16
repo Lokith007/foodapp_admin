@@ -33,13 +33,14 @@ export default function Home() {
 
       {/* Login Button */}
       <Pressable
-        onPress={() => router.push('/(auth)/login')}
-        className="w-full bg-yellow-300 py-4 rounded-full shadow-lg"
-      >
-        <Text className="text-red-500 font-bold text-lg text-center">
-          Log In
-        </Text>
-      </Pressable>
+  onPress={() => router.push("/(auth)/sign-in")}
+  className="w-full bg-yellow-300 py-4 rounded-full shadow-lg"
+>
+  <Text className="text-red-500 font-bold text-lg text-center">
+    Log In
+  </Text>
+</Pressable>
+
     </LinearGradient>
   );
 }

@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, SafeAreaView } from "react-nat
 import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 
-export default function SignUp() {
+export default function SetPassword() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -15,39 +15,18 @@ export default function SignUp() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
-        <Text className="text-white text-lg font-semibold">Sign Up</Text>
+        <Text className="text-white text-lg font-semibold">Set Password</Text>
         <View className="w-6" />
       </View>
 
       {/* Main Card */}
       <View className="flex-1 bg-gray-100 rounded-t-3xl mt-8 px-6 py-8">
-        {/* Title */}
+        {/* Info Text */}
         <View className="mb-8">
-          <Text className="text-2xl font-bold text-gray-800 mb-4">Create Account</Text>
+          <Text className="text-2xl font-bold text-gray-800 mb-4">Create New Password</Text>
           <Text className="text-gray-600 text-sm leading-relaxed">
-            Enter your details to create a new account.
+            Create a strong new password to secure your admin account.
           </Text>
-        </View>
-
-        {/* Email */}
-        <View className="mb-6">
-          <Text className="text-gray-800 font-medium mb-2">Email</Text>
-          <TextInput
-            placeholder="you@example.com"
-            placeholderTextColor="#6B7280"
-            className="bg-yellow-200 rounded-lg px-4 py-4 text-gray-800"
-          />
-        </View>
-
-        {/* Mobile */}
-        <View className="mb-6">
-          <Text className="text-gray-800 font-medium mb-2">Mobile Number</Text>
-          <TextInput
-            keyboardType="phone-pad"
-            placeholder="9876543210"
-            placeholderTextColor="#6B7280"
-            className="bg-yellow-200 rounded-lg px-4 py-4 text-gray-800"
-          />
         </View>
 
         {/* Password */}
@@ -90,12 +69,14 @@ export default function SignUp() {
           </View>
         </View>
 
-        {/* Sign Up Button */}
+        {/* Button */}
         <TouchableOpacity
           className="w-full bg-orange-500 py-4 rounded-full shadow-lg"
           onPress={() => router.push("/sign-in")}
         >
-          <Text className="text-white font-bold text-lg text-center">Sign Up</Text>
+          <Text className="text-white font-bold text-lg text-center">
+            Create New Password
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
