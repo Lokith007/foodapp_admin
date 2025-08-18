@@ -1,12 +1,65 @@
 import React, { useState } from "react"
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView } from "react-native"
+import { View, Text, TextInput, TouchableOpacity, SafeAreaView, Alert } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
+import { useMutation, useQuery, gql } from '@apollo/client'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Picker } from '@react-native-picker/picker'
+
+const SIGN_UP = gql`
+  mutation SignUp($email: String!, $password: String!, $name: String) {
+    signUp(email: $email, password: $password, name: $name) {
+      token
+      userId
+    }
+  }
+`
+
+const GET_RESTAURENTS = gql`
+  query {
+    getRestaurents {
+      displayName
+      login
+      name
+    }
+  }
+`
 
 export default function SignUp() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null)
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+
+  // fetch allowed emails
+  const { data, loading: loadingRestaurants, error: restaurantsError } = useQuery(GET_RESTAURENTS)
+
+  const [signUp, { loading, error }] = useMutation(SIGN_UP, {
+    onCompleted: async (data) => {
+      await AsyncStorage.setItem('token', data.signUp.token)
+      router.replace('/sign-in')
+    },
+  })
+
+  const handleSignUp = () => {
+    if (!selectedRestaurant) {
+      Alert.alert('Select Email', 'Please choose an email from the list.')
+      return
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Password Mismatch', 'Passwords do not match.')
+      return
+    }
+    signUp({
+      variables: {
+        email: selectedRestaurant.login,
+        name: selectedRestaurant.name,
+        password,
+      },
+    })
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-yellow-400">
@@ -29,25 +82,34 @@ export default function SignUp() {
           </Text>
         </View>
 
-        {/* Email */}
+        {/* Email Dropdown */}
         <View className="mb-6">
-          <Text className="text-gray-800 font-medium mb-2">Email</Text>
-          <TextInput
-            placeholder="you@example.com"
-            placeholderTextColor="#6B7280"
-            className="bg-yellow-200 rounded-lg px-4 py-4 text-gray-800"
-          />
-        </View>
-
-        {/* Mobile */}
-        <View className="mb-6">
-          <Text className="text-gray-800 font-medium mb-2">Mobile Number</Text>
-          <TextInput
-            keyboardType="phone-pad"
-            placeholder="9876543210"
-            placeholderTextColor="#6B7280"
-            className="bg-yellow-200 rounded-lg px-4 py-4 text-gray-800"
-          />
+          <Text className="text-gray-800 font-medium mb-2">Select Email</Text>
+          <View className="bg-yellow-200 rounded-lg">
+            {loadingRestaurants ? (
+              <Text className="px-4 py-4 text-gray-600">Loading emails...</Text>
+            ) : restaurantsError ? (
+              <Text className="px-4 py-4 text-red-500">{restaurantsError.message}</Text>
+            ) : (
+              <Picker
+                selectedValue={selectedRestaurant?.login || ''}
+                onValueChange={(value) => {
+                  const rest = data?.getRestaurents.find((r) => r.login === value)
+                  setSelectedRestaurant(rest || null)
+                }}
+                style={{ color: '#374151' }}
+              >
+                <Picker.Item label="-- Choose an email --" value="" />
+                {data?.getRestaurents?.map((rest) => (
+                  <Picker.Item
+                    key={rest.login}
+                    label={`${rest.displayName} (${rest.login})`}
+                    value={rest.login}
+                  />
+                ))}
+              </Picker>
+            )}
+          </View>
         </View>
 
         {/* Password */}
@@ -59,6 +121,8 @@ export default function SignUp() {
               placeholder="********"
               placeholderTextColor="#6B7280"
               className="flex-1 text-gray-800 tracking-widest"
+              value={password}
+              onChangeText={setPassword}
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
               <Ionicons
@@ -79,6 +143,8 @@ export default function SignUp() {
               placeholder="********"
               placeholderTextColor="#6B7280"
               className="flex-1 text-gray-800 tracking-widest"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
             />
             <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
               <Ionicons
@@ -93,10 +159,18 @@ export default function SignUp() {
         {/* Sign Up Button */}
         <TouchableOpacity
           className="w-full bg-orange-500 py-4 rounded-full shadow-lg"
-          onPress={() => router.push("/sign-in")}
+          disabled={loading}
+          onPress={handleSignUp}
         >
-          <Text className="text-white font-bold text-lg text-center">Sign Up</Text>
+          <Text className="text-white font-bold text-lg text-center">
+            {loading ? "Signing Up..." : "Sign Up"}
+          </Text>
         </TouchableOpacity>
+
+        {/* Show Error */}
+        {error && (
+          <Text className="text-red-500 text-sm mt-4 text-center">{error.message}</Text>
+        )}
       </View>
     </SafeAreaView>
   )
