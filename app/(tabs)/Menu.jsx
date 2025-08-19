@@ -1,139 +1,250 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Modal,
+  TextInput,
+  Switch,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { gql, useQuery, useMutation } from '@apollo/client';
 
-const categories = [
-  { id: 1, name: "Snacks", icon: "🍿" },
-  { id: 2, name: "Meal", icon: "🍽️" },
-  { id: 3, name: "Dessert", icon: "🧁" },
-  { id: 4, name: "Drinks", icon: "🥤" },
-];
+import Header from '../components/Header';
+import FoodCard from '../components/FoodCard.jsx';
+import Loading from '../components/Loading.jsx';
+import ErrorComponent from '../components/Error.jsx';
 
-const foodItems = [
-  {
-    id: 1,
-    name: "Mexican Appetizer",
-    description: "Tortilla Chips With Toppins",
-    rating: 5.0,
-    price: "₹15.00",
-    image: "https://picsum.photos/400/250?food=1",
-  },
-  {
-    id: 2,
-    name: "Pork Skewer",
-    description:
-      "Marinated in a rich blend of herbs and spices, then grilled to perfection, served with a side of zesty dipping sauce.",
-    rating: 4.0,
-    price: "₹12.99",
-    image: "https://picsum.photos/400/250?food=2",
-  },
-];
+// ✅ Queries stay inside this file
+const GET_MENU = gql`
+  query GetMenu($name: String!) {
+    getMenuByRestaurantName(name: $name) {
+      admin
+      isOpen
+      logo
+      menu {
+        category
+        description
+        freq
+        imageUrl
+        isAvailable
+        name
+        price
+      }
+      name
+    }
+  }
+`;
 
-const CategoryIcon = ({ category, active }) => (
-  <TouchableOpacity className="flex flex-col items-center mx-3">
-    <View
-      className={`w-16 h-16 rounded-full flex items-center justify-center mb-2 ${
-        active ? "bg-white" : "bg-[#F3E9B5]"
-      }`}
-    >
-      <Text
-        className={`text-2xl ${active ? "text-[#E95322]" : "text-[#E95322]"}`}
-      >
-        {category.icon}
-      </Text>
-    </View>
-    <Text
-      className={`text-sm font-medium ${
-        active ? "text-black" : "text-white"
-      }`}
-    >
-      {category.name}
-    </Text>
-  </TouchableOpacity>
-);
+const ME = gql`
+  query {
+    me {
+      id
+      email
+      name
+    }
+  }
+`;
 
-
-const FoodCard = ({ item }) => (
-  <View className="bg-[#F5F5F5] rounded-2xl mx-4 mb-6 shadow-lg border border-[#e48b1d]">
-    <Image
-      source={{ uri: item.image }}
-      className="w-full h-48 rounded-t-2xl"
-      resizeMode="cover"
-    />
-    <View className="p-4">
-      <View className="flex-row justify-between items-center mb-2">
-        <Text className="text-lg font-bold text-gray-900">{item.name}</Text>
-        <View className="flex-row items-center bg-[#E95322] px-2 py-1 rounded-full">
-          <Ionicons name="star" size={12} color="#fff" />
-          <Text className="text-white text-xs font-bold ml-1">
-            {item.rating.toFixed(1)}
-          </Text>
-        </View>
-      </View>
-      <Text className="text-gray-600 text-sm mb-3">{item.description}</Text>
-      <View className="flex-row justify-between items-center border-t border-gray-200 pt-3">
-        <View />
-        <Text className="text-[#E95322] text-lg font-bold">{item.price}</Text>
-      </View>
-    </View>
-  </View>
-);
-
-
+// ✅ Mutation to add menu item
+const ADD_TO_MENU = gql`
+  mutation AddToMenu(
+    $restaurantId: String!
+    $category: String!
+    $description: String!
+    $imageUrl: String!
+    $isAvailable: Boolean!
+    $name: String!
+    $price: Float!
+  ) {
+    addToMenu(
+      restaurantId: $restaurantId
+      category: $category
+      description: $description
+      freq: 0
+      imageUrl: $imageUrl
+      isAvailable: $isAvailable
+      name: $name
+      price: $price
+    )
+  }
+`;
 
 export default function FoodDeliveryApp() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // form state
+  const [newItem, setNewItem] = useState({
+    category: '',
+    description: '',
+    imageUrl: '',
+    isAvailable: true,
+    name: '',
+    price: '',
+  });
+
+  const { data: meData, loading: meLoading } = useQuery(ME);
+  const userId = meData?.me?.name || null;
+
+  const { data, loading, error, refetch } = useQuery(GET_MENU, {
+    variables: { name: userId },
+    skip: !userId,
+  });
+
+  const [addToMenu, { loading: adding }] = useMutation(ADD_TO_MENU, {
+    onCompleted: () => {
+      setModalVisible(false);
+      setNewItem({
+        category: '',
+        description: '',
+        imageUrl: '',
+        isAvailable: true,
+        name: '',
+        price: '',
+      });
+      refetch(); // refresh menu
+    },
+  });
+
+  const handleAdd = () => {
+    if (!userId) return;
+
+    addToMenu({
+      variables: {
+        restaurantId: userId,
+        category: newItem.category,
+        description: newItem.description,
+        imageUrl: newItem.imageUrl,
+        isAvailable: newItem.isAvailable,
+        name: newItem.name,
+        price: parseFloat(newItem.price),
+      },
+    });
+  };
+
+  const menu = data?.getMenuByRestaurantName?.menu || [];
+  const categories = useMemo(
+    () => [...new Set(menu.map((item) => item.category))],
+    [menu]
+  );
+
+  if (loading || meLoading) return <Loading />;
+  if (error) return <ErrorComponent />;
 
   return (
-    <View className="flex-1 bg-[#F5F5F5">
-      {/* Header */}
-      <View className="bg-[#F5CB58] rounded-b-3xl px-4 pt-10 pb-6 shadow-md">
-        <View className="flex-row items-center justify-between mb-6">
-          <View className="flex-1 flex-row items-center bg-white rounded-full px-4 py-2 mr-3 shadow-md">
-            <TextInput
-              placeholder="Search"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              className="flex-1 text-gray-700"
-            />
-            <Ionicons name="search" size={18} color="#f97316" />
-          </View>
-          <TouchableOpacity className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-md">
-            <Ionicons name="cart-outline" size={20} color="#f97316" />
-          </TouchableOpacity>
-          <TouchableOpacity className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-md ml-2">
-            <Ionicons name="notifications-outline" size={20} color="#f97316" />
-          </TouchableOpacity>
-          <TouchableOpacity className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-md ml-2">
-            <Ionicons name="person-outline" size={20} color="#f97316" />
-          </TouchableOpacity>
-        </View>
+    <View className="flex-1 bg-[#F5F5F5]">
+      <Header
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        categories={categories}
+      />
 
-        {/* Categories */}
-        <View className="bg-[#f66c3a] rounded-2xl px-4 py-5 shadow-md">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-            {categories.map((category, i) => (
-              <CategoryIcon key={category.id} category={category} active={i === 0} />
-            ))}
-          </ScrollView>
-        </View>
-      </View>
-
-      {/* Body */}
-      <ScrollView className="flex-1 pt-4">
+      <ScrollView className="flex-1 pt-4 ">
         <View className="flex-row items-center justify-between px-4 mb-4">
           <Text className="text-gray-700 font-medium">
-            Sort By: <Text className="text-orange-600 font-semibold">Popular</Text>
+            Sort By:{' '}
+            <Text className="text-orange-600 font-semibold">Popular</Text>
           </Text>
           <TouchableOpacity className="bg-orange-500 rounded-full p-2 shadow-md">
             <Ionicons name="filter" size={16} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        {foodItems.map((item) => (
-          <FoodCard key={item.id} item={item} />
-        ))}
+        {menu
+          .filter((item) =>
+            item.name.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+          .map((item, idx) => (
+            <FoodCard key={idx} item={item} />
+          ))}
       </ScrollView>
+
+      {/* Floating Plus Button */}
+      <TouchableOpacity
+        className="absolute bottom-6 right-6 bg-orange-600 rounded-full p-4 shadow-lg"
+        onPress={() => setModalVisible(true)}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
+
+      {/* Modal for Adding Menu Item */}
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <View className="flex-1 bg-black/50 justify-center items-center">
+          <View className="bg-white w-11/12 p-6 rounded-xl shadow-lg">
+            <Text className="text-lg font-bold mb-4 text-center">
+              Add New Item
+            </Text>
+
+            <TextInput
+              placeholder="Name"
+              className="border p-2 mb-3 rounded"
+              value={newItem.name}
+              onChangeText={(text) => setNewItem({ ...newItem, name: text })}
+            />
+            <TextInput
+              placeholder="Category"
+              className="border p-2 mb-3 rounded"
+              value={newItem.category}
+              onChangeText={(text) =>
+                setNewItem({ ...newItem, category: text })
+              }
+            />
+            <TextInput
+              placeholder="Description"
+              className="border p-2 mb-3 rounded"
+              value={newItem.description}
+              onChangeText={(text) =>
+                setNewItem({ ...newItem, description: text })
+              }
+            />
+            <TextInput
+              placeholder="Image URL"
+              className="border p-2 mb-3 rounded"
+              value={newItem.imageUrl}
+              onChangeText={(text) =>
+                setNewItem({ ...newItem, imageUrl: text })
+              }
+            />
+            <TextInput
+              placeholder="Price"
+              keyboardType="numeric"
+              className="border p-2 mb-3 rounded"
+              value={newItem.price}
+              onChangeText={(text) => setNewItem({ ...newItem, price: text })}
+            />
+
+            <View className="flex-row items-center mb-4">
+              <Text className="mr-2">Available:</Text>
+              <Switch
+                value={newItem.isAvailable}
+                onValueChange={(val) =>
+                  setNewItem({ ...newItem, isAvailable: val })
+                }
+              />
+            </View>
+
+            <View className="flex-row justify-between">
+              <TouchableOpacity
+                className="bg-gray-400 px-4 py-2 rounded"
+                onPress={() => setModalVisible(false)}
+              >
+                <Text className="text-white">Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="bg-orange-600 px-4 py-2 rounded"
+                onPress={handleAdd}
+                disabled={adding}
+              >
+                <Text className="text-white">
+                  {adding ? 'Adding...' : 'Add'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -1,11 +1,24 @@
-import React from 'react';
-import { View, Text, Image, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator , Text, Image, Pressable } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Home() {
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        // User already logged in → go to main tabs
+        router.replace('/Menu');
+      }
+      setLoading(false);
+    };
+    checkAuth();
+  }, []);
   return (
     <LinearGradient
       colors={['#FB923C', '#F97316', '#EF4444']}
