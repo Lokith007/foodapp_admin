@@ -4,7 +4,7 @@ import { gql, useQuery } from '@apollo/client'
 
 const GET_RESTAURANT_ORDERS = gql`
   query GetRestaurantOrders($restaurantId: String!) {
-    getRestaurantOrders(restaurantId: $restaurantId) {
+    getCachedRestaurantOrders(restaurantId: $restaurantId) {
       orders {
         createdAt
         total
@@ -36,9 +36,12 @@ const Orders = () => {
   console.log(userId);
   
   const { data, loading, error } = useQuery(GET_RESTAURANT_ORDERS, {
-    variables: { restaurantId: userId }, // <- change this dynamically if needed
+    variables: { restaurantId: userId },
     fetchPolicy: 'network-only',
+    pollInterval: 5000, // 🔁 re-fetch every 5 seconds
+    skip: !userId, // ❌ don't run until we have the id
   })
+  
 
   if (loading) {
     return (
@@ -56,7 +59,7 @@ const Orders = () => {
     )
   }
 
-  const orders = data?.getRestaurantOrders?.orders || []
+  const orders = data?.getCachedRestaurantOrders?.orders || []
 
   return (
     <View className="flex-1 bg-white p-4">
