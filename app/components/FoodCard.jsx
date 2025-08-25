@@ -104,80 +104,107 @@ export default function FoodCard({ item }) {
 
       {/* Modal for Editing */}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
-        <View className="flex-1 bg-black/50 justify-center items-center">
-          <View className="bg-white p-6 rounded-2xl w-11/12">
-            <Text className="text-lg font-bold mb-4">Edit Item</Text>
+  <View className="flex-1 bg-black/50 justify-center items-center px-4">
+    <View className="bg-white rounded-3xl w-full p-6 shadow-2xl">
+      {/* Header */}
+      <Text className="text-2xl font-extrabold text-orange-500 mb-6 text-center">
+        Edit Item
+      </Text>
 
-            {/* Name */}
-            <TextInput
-              value={editedItem.name}
-              placeholder="Name"
-              onChangeText={(text) =>
-                setEditedItem((prev) => ({ ...prev, name: text }))
-              }
-              className="border border-gray-300 rounded-lg p-2 mb-3"
-            />
-
-            {/* Price */}
-            <TextInput
-              value={String(editedItem.price)}
-              placeholder="Price"
-              keyboardType="numeric"
-              onChangeText={(text) =>
-                setEditedItem((prev) => ({ ...prev, price: text }))
-              }
-              className="border border-gray-300 rounded-lg p-2 mb-3"
-            />
-
-            {/* Description */}
-            <TextInput
-              value={editedItem.description}
-              placeholder="Description"
-              onChangeText={(text) =>
-                setEditedItem((prev) => ({ ...prev, description: text }))
-              }
-              className="border border-gray-300 rounded-lg p-2 mb-3"
-            />
-
-            {/* Category */}
-            <TextInput
-              value={editedItem.category}
-              placeholder="Category"
-              onChangeText={(text) =>
-                setEditedItem((prev) => ({ ...prev, category: text }))
-              }
-              className="border border-gray-300 rounded-lg p-2 mb-3"
-            />
-
-            {/* Image URL */}
-            <TextInput
-              value={editedItem.imageUrl}
-              placeholder="Image URL"
-              onChangeText={(text) =>
-                setEditedItem((prev) => ({ ...prev, imageUrl: text }))
-              }
-              className="border border-gray-300 rounded-lg p-2 mb-3"
-            />
-
-            {/* Availability */}
-            <View className="flex-row items-center mb-3">
-              <Text className="mr-3">Available</Text>
-              <Switch
-                value={editedItem.isAvailable}
-                onValueChange={(val) =>
-                  setEditedItem((prev) => ({ ...prev, isAvailable: val }))
-                }
-              />
-            </View>
-
-            {/* Buttons */}
-            <View className="flex-row justify-between mt-4">
-              <Button title="Cancel" color="red" onPress={() => setModalVisible(false)} />
-              <Button title={loading ? 'Saving...' : 'Save'} onPress={handleSave} />
-            </View>
-          </View>
+      {/* Form Section */}
+      <View className="space-y-4">
+        {/* Name */}
+        <View>
+          <Text className="text-sm font-semibold text-gray-700 mb-1">Name</Text>
+          <TextInput
+            value={editedItem.name}
+            placeholder="Enter item name"
+            onChangeText={(text) => setEditedItem((prev) => ({ ...prev, name: text }))}
+            className="bg-orange-50 border border-orange-300 rounded-xl p-3 text-gray-800"
+          />
         </View>
-      </Modal>
+
+        {/* Price */}
+        <View>
+          <Text className="text-sm font-semibold text-gray-700 mb-1">Price</Text>
+          <TextInput
+            value={String(editedItem.price)}
+            placeholder="Enter price"
+            keyboardType="numeric"
+            onChangeText={(text) => setEditedItem((prev) => ({ ...prev, price: text }))}
+            className="bg-orange-50 border border-orange-300 rounded-xl p-3 text-gray-800"
+          />
+        </View>
+
+        {/* Description */}
+        <View>
+          <Text className="text-sm font-semibold text-gray-700 mb-1">Description</Text>
+          <TextInput
+            value={editedItem.description}
+            placeholder="Enter description"
+            multiline
+            numberOfLines={3}
+            onChangeText={(text) => setEditedItem((prev) => ({ ...prev, description: text }))}
+            className="bg-orange-50 border border-orange-300 rounded-xl p-3 text-gray-800 h-20"
+          />
+        </View>
+
+        {/* Category */}
+        <View>
+          <Text className="text-sm font-semibold text-gray-700 mb-1">Category</Text>
+          <TextInput
+            value={editedItem.category}
+            placeholder="Enter category"
+            onChangeText={(text) => setEditedItem((prev) => ({ ...prev, category: text }))}
+            className="bg-orange-50 border border-orange-300 rounded-xl p-3 text-gray-800"
+          />
+        </View>
+
+        {/* Image URL */}
+        <View>
+          <Text className="text-sm font-semibold text-gray-700 mb-1">Image URL</Text>
+          <TextInput
+            value={editedItem.imageUrl}
+            placeholder="Enter image URL"
+            onChangeText={(text) => setEditedItem((prev) => ({ ...prev, imageUrl: text }))}
+            className="bg-orange-50 border border-orange-300 rounded-xl p-3 text-gray-800"
+          />
+        </View>
+
+        {/* Availability */}
+        <View className="flex-row items-center justify-between mt-2">
+          <Text className="text-sm font-semibold text-gray-700">Available</Text>
+          <Switch
+            value={editedItem.isAvailable}
+            onValueChange={(val) => setEditedItem((prev) => ({ ...prev, isAvailable: val }))}
+            trackColor={{ false: "#fca5a5", true: "#fde047" }}
+            thumbColor={editedItem.isAvailable ? "#f97316" : "#f87171"}
+          />
+        </View>
+      </View>
+
+      {/* Action Buttons */}
+      <View className="flex-row justify-between mt-6">
+        <TouchableOpacity
+          onPress={() => setModalVisible(false)}
+          className="flex-1 bg-red-500 py-3 rounded-xl mr-2"
+        >
+          <Text className="text-center text-white font-bold text-base">Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={loading}
+          className="flex-1 bg-orange-500 py-3 rounded-xl ml-2"
+        >
+          <Text className="text-center text-white font-bold text-base">
+            {loading ? "Saving..." : "Save"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
     </>
   );
 }

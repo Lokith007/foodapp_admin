@@ -1,6 +1,6 @@
 // tabs/_layout.tsx
 import { Tabs } from 'expo-router'
-import React, { useRef } from 'react'
+import React from 'react'
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -8,14 +8,14 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#7c3aed',
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: '#E95322',   // active color (orange)
+        tabBarInactiveTintColor: '#9ca3af', // inactive (gray)
         tabBarStyle: {
           backgroundColor: '#ffffff',
           borderTopWidth: 1,
           borderTopColor: '#e5e7eb',
-          height: 70,
-          paddingTop: 7,
+          paddingBottom: 6, // safe gap above system bar
+          paddingTop: 6,    // keeps icon centered
         },
         tabBarShowLabel: false,
         headerShown: false,
@@ -25,8 +25,8 @@ export default function TabsLayout() {
         name="Menu"
         options={{
           title: 'Menu',
-          tabBarIcon: () => (
-            <MaterialCommunityIcons name="food-outline" color="#E95322" size={30} />
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="food-outline" color={color} size={30} />
           ),
         }}
       />
@@ -36,25 +36,27 @@ export default function TabsLayout() {
         options={{
           title: 'Orders',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="silverware-fork-knife" color="#E95322" size={30} />
+            <MaterialCommunityIcons name="silverware-fork-knife" color={color} size={30} />
           ),
         }}
       />
+
       <Tabs.Screen
         name="History"
         options={{
           title: 'History',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="history" color="#E95322" size={30} />
+            <MaterialCommunityIcons name="history" color={color} size={30} />
           ),
         }}
       />
+
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
           tabBarIcon: ({ color }) => (
-            <Ionicons name="person-outline" color="#E95322" size={30} />
+            <Ionicons name="person-outline" color={color} size={30} />
           ),
         }}
       />
