@@ -6,20 +6,25 @@ const GET_RESTAURANT_ORDERS = gql`
   query GetRestaurantOrders($restaurantId: String!) {
     getCachedRestaurantOrders(restaurantId: $restaurantId) {
       orders {
-        createdAt
-        total
         userId
+        orderId
+        userName
         items {
           dishId
-          imageUrl
-          name
+          dishName
           price
           quantity
+          imageUrl
         }
+        total
+        createdAt
+        done
       }
+      restaurantId
     }
   }
 `
+
 const ME = gql`
   query {
     me {
@@ -34,14 +39,14 @@ const Orders = () => {
   const { data: meData, loading: meLoading } = useQuery(ME);
   const userId = meData?.me?.name || null;
   console.log(userId);
-  
+
   const { data, loading, error } = useQuery(GET_RESTAURANT_ORDERS, {
     variables: { restaurantId: userId },
     fetchPolicy: 'network-only',
     pollInterval: 5000, // 🔁 re-fetch every 5 seconds
     skip: !userId, // ❌ don't run until we have the id
   })
-  
+
 
   if (loading) {
     return (
