@@ -1,14 +1,21 @@
 import React,{useState} from 'react';
-import { View, Text, ImageBackground, TouchableOpacity, Switch, ScrollView } from 'react-native';
+import { View, Text, ImageBackground, TouchableOpacity, Switch, ScrollView , Button } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 
 export default function Profile() {
   const [isOpen,setIsOpen]=useState(true);
-
+  const router = useRouter();
+  
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('token');
+    router.replace('/sign-in');
+  };
   return (
     <ScrollView className="flex-1 bg-white">
       {/* Header with Background Image */}
       <ImageBackground 
-        source={require("../../assets/restaurant.jpg")} 
+        source={require("../../assets/restaurant.jpg")}
         className="h-44 justify-end"
         resizeMode="cover"
       >
@@ -55,6 +62,8 @@ export default function Profile() {
         <TouchableOpacity className="mt-6 bg-orange-500 py-3 rounded-xl items-center">
           <Text className="text-white font-bold">Edit Details</Text>
         </TouchableOpacity>
+        <Button title="Logout" onPress={handleLogout} />
+
       </View>
     </ScrollView>
   );
