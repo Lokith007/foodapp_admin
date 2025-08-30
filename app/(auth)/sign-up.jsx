@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Picker } from '@react-native-picker/picker'
 
 const SIGN_UP = gql`
-  mutation SignUp($email: String!, $password: String!, $name: String) {
+  mutation SignUp($email: String!, $password: String!, $name: String!) {
     signUp(email: $email, password: $password, name: $name) {
       token
       userId
