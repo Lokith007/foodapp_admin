@@ -21,7 +21,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.muthuraj14.lmApp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -29,6 +30,13 @@
     "plugins": [
       "expo-router",
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "22cef874-1506-4a22-9105-29170f1af7a7"
+      }
+    },
+    "owner": "muthuraj14"
   }
 }
