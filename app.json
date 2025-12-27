@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "lmApp",
-    "slug": "lmApp",
-    "scheme": "lmapp",
+    "name": "lmAppAdmin",
+    "slug": "lmAppAdmin",
+    "scheme": "lmappadmin",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

@@ -9,6 +9,7 @@ const GET_RESTAURANT_ORDERS = gql`
       orders {
         userId
         orderId
+        internalOrderId
         userName
         status   # 🔹 order status
         items {
@@ -39,8 +40,16 @@ const ME = gql`
 
 // 🔹 Mutation: Update order status (enum)
 const UPDATE_ORDER_STATUS = gql`
-  mutation UpdateOrderStatus($restaurantId: String!, $orderId: Int!, $status: OrderStatus!) {
-    updateOrderStatus(restaurantId: $restaurantId, orderId: $orderId, status: $status)
+  mutation UpdateOrderStatus(
+    $restaurantId: String!
+    $orderId: String!
+    $status: String!
+  ) {
+    updateOrderStatus(
+      restaurantId: $restaurantId
+      orderId: $orderId
+      status: $status
+    )
   }
 `
 
@@ -64,6 +73,8 @@ const Orders = () => {
   // 🔹 Status update handler
   const handleUpdateStatus = async (orderId, currentStatus) => {
     let nextStatus = null
+    console.log(orderId, currentStatus);
+
     if (currentStatus === "paid") nextStatus = "done"
     else if (currentStatus === "done") nextStatus = "delivered"
 
@@ -75,7 +86,9 @@ const Orders = () => {
       })
       console.log(`✅ Order ${orderId} updated to ${nextStatus}`)
     } catch (err) {
-      console.error("❌ Error updating order:", err.message)
+      console.error("❌ FULL ERROR OBJECT:", err);
+      console.error("❌ GraphQL Errors:", err.graphQLErrors);
+      console.error("❌ Network Error:", err.networkError);
     }
   }
 
@@ -145,13 +158,12 @@ const Orders = () => {
 
             {/* 🔹 Status Badge */}
             <Text
-              className={`mt-2 text-sm font-semibold text-center ${
-                item.status === "pending"
+              className={`mt-2 text-sm font-semibold text-center ${item.status === "pending"
                   ? "text-blue-500"
                   : item.status === "done"
-                  ? "text-green-500"
-                  : "text-gray-500"
-              }`}
+                    ? "text-green-500"
+                    : "text-gray-500"
+                }`}
             >
               Status: {item.status}
             </Text>
@@ -160,7 +172,7 @@ const Orders = () => {
             <View className="flex-row mt-3">
               {item.status === "paid" && (
                 <TouchableOpacity
-                  onPress={() => handleUpdateStatus(item.orderId, item.status)}
+                  onPress={() => handleUpdateStatus(item.internalOrderId, item.status)}
                   className="flex-1 p-3 rounded-xl bg-blue-500"
                 >
                   <Text className="text-white text-center font-semibold">
@@ -171,7 +183,7 @@ const Orders = () => {
 
               {item.status === "done" && (
                 <TouchableOpacity
-                  onPress={() => handleUpdateStatus(item.orderId, item.status)}
+                  onPress={() => handleUpdateStatus(item.internalOrderId, item.status)}
                   className="flex-1 p-3 rounded-xl bg-green-500"
                 >
                   <Text className="text-white text-center font-semibold">
