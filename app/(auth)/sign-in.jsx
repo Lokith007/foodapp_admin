@@ -15,7 +15,7 @@ const SIGN_IN = gql`
 `;
 
 export default function SignIn() {
-  const [showPassword, setShowPassword] = useState(false);
+const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showForgot, setShowForgot] = useState(false);
@@ -26,12 +26,7 @@ export default function SignIn() {
       await AsyncStorage.setItem('token', data.signIn.token);
       router.replace('/Menu');
     },
-    onError: (err) => {
-      if (err.message.includes("Invalid credentials")) {
-        setShowForgot(true);
-      }
-    },
-
+  
   });
 
   return (
@@ -65,7 +60,6 @@ export default function SignIn() {
             value={email}
            onChangeText={(t) => {
               setEmail(t);
-              setShowForgot(false); // 🔹 RESET
             }}
           />
         </View>
@@ -94,16 +88,16 @@ export default function SignIn() {
             </TouchableOpacity>
           </View>
         </View>
-          {showForgot && (
-          <TouchableOpacity
-            onPress={() => router.push("/forgot-password")}
-            className="mb-4"
-          >
-            <Text className="text-orange-600 text-sm text-right font-semibold">
-              Forgot Password?
-            </Text>
-          </TouchableOpacity>
-        )}
+          {/* Forgot Password (static) */}
+<TouchableOpacity
+  onPress={() => router.push("/forgot-password")}
+  className="mb-4"
+>
+  <Text className="text-gray-500 text-sm text-right">
+    Forgot Password?
+  </Text>
+</TouchableOpacity>
+
 
         {/* Login Button */}
         <TouchableOpacity
