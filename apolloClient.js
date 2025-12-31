@@ -10,8 +10,8 @@ if (__DEV__) {
 }
 
 const httpLink = new HttpLink({
-  // uri: 'https://lm-backend-zrtl.onrender.com/graphql', // ✅ Ensure /graphql
-    uri: 'http://192.168.1.7:4000/graphql',
+  uri: 'https://lm-backend-zrtl.onrender.com/graphql', // ✅ Ensure /graphql
+    //uri: 'http://192.168.1.7:4000/graphql',
 
 });
 
