@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, FlatList, Image, TouchableOpacity } from 'react-native'
-import { gql, useQuery, useMutation } from '@apollo/client'
+import { gql, useQuery, useMutation, useSubscription } from '@apollo/client'
 
 // 🔹 Query: Get orders (with status)
 const GET_RESTAURANT_ORDERS = gql`
@@ -53,16 +53,40 @@ const UPDATE_ORDER_STATUS = gql`
   }
 `
 
+// 🔹 Subscription: New Order Alert
+const RESTAURANT_SUBSCRIPTION = gql`
+  subscription OnRestaurantOrdersUpdated($restaurantId: String!) {
+    restaurantOrdersUpdated(restaurantId: $restaurantId) {
+      internalOrderId
+      status
+      userName
+      items {
+        dishName
+        quantity
+      }
+    }
+  }
+`;
+
 const Orders = () => {
   const { data: meData, loading: meLoading } = useQuery(ME)
   const restaurantId = meData?.me?.name || null
 
-  const { data, loading, error } = useQuery(GET_RESTAURANT_ORDERS, {
+  const { data, loading, error, refetch } = useQuery(GET_RESTAURANT_ORDERS, {
     variables: { restaurantId },
     fetchPolicy: 'network-only',
-    pollInterval: 5000,
     skip: !restaurantId,
   })
+
+  // 🔹 Use subscription for real-time "Notify and Refetch"
+  useSubscription(RESTAURANT_SUBSCRIPTION, {
+    variables: { restaurantId },
+    onData: ({ data }) => {
+      console.log("🔔 [Orders.jsx] Real-time update received!", JSON.stringify(data, null, 2));
+      refetch(); // Refresh the list automatically
+    },
+    skip: !restaurantId,
+  });
 
   const [updateOrderStatus] = useMutation(UPDATE_ORDER_STATUS, {
     refetchQueries: [
@@ -159,10 +183,10 @@ const Orders = () => {
             {/* 🔹 Status Badge */}
             <Text
               className={`mt-2 text-sm font-semibold text-center ${item.status === "pending"
-                  ? "text-blue-500"
-                  : item.status === "done"
-                    ? "text-green-500"
-                    : "text-gray-500"
+                ? "text-blue-500"
+                : item.status === "done"
+                  ? "text-green-500"
+                  : "text-gray-500"
                 }`}
             >
               Status: {item.status}
