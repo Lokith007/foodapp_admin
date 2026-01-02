@@ -57,16 +57,20 @@ const UPDATE_ORDER_STATUS = gql`
 const RESTAURANT_SUBSCRIPTION = gql`
   subscription OnRestaurantOrdersUpdated($restaurantId: String!) {
     restaurantOrdersUpdated(restaurantId: $restaurantId) {
-      internalOrderId
-      status
-      userName
-      items {
-        dishName
-        quantity
+      restaurantId
+      orders {
+        internalOrderId
+        status
+        userName
+        items {
+          dishName
+          quantity
+        }
       }
     }
   }
 `;
+
 
 const Orders = () => {
   const { data: meData, loading: meLoading } = useQuery(ME)
