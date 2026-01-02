@@ -13,15 +13,15 @@ if (__DEV__) {
 
 // 1. HTTP Link for Queries & Mutations
 const httpLink = new HttpLink({
-  // uri: 'https://lm-backend-zrtl.onrender.com/graphql', // ✅ Ensure /graphql
-  uri: 'http://10.247.197.202:4000/graphql',
+  uri: 'https://lm-backend-zrtl.onrender.com/graphql', // ✅ Ensure /graphql
+  //uri: 'http://10.247.197.202:4000/graphql',
 });
 
 // 2. WebSocket Link for Subscriptions
 const wsLink = new GraphQLWsLink(
   createClient({
-    //url: 'wss://lm-backend-zrtl.onrender.com/graphql',
-    url: 'ws://10.247.197.202:4000/graphql',
+    url: 'wss://lm-backend-zrtl.onrender.com/graphql',
+    //url: 'ws://10.247.197.202:4000/graphql',
     connectionParams: async () => {
       // Get your token from storage (e.g., AsyncStorage / localStorage)
       const token = await AsyncStorage.getItem('token');
