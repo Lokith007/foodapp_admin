@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "630412811832",
+    "project_id": "lmadmin-3af66",
+    "storage_bucket": "lmadmin-3af66.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:630412811832:android:dcb0218e8ecb323b5510cd",
+        "android_client_info": {
+          "package_name": "com.muthuraj14.lmappadmin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqcF8iCkleRSb65ityiz7tgihalK8XPKg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

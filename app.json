@@ -1,42 +1,36 @@
 {
   "expo": {
-    "name": "lmAppAdmin",
-    "slug": "lmAppAdmin",
+    "name": "GrabIt Admin",
+    "slug": "lmappadmin",
     "scheme": "lmappadmin",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "ios": {
-      "supportsTablet": true
-    },
+
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "package": "com.muthuraj14.lmApp"
+      "package": "com.muthuraj14.lmappadmin",
+      "googleServicesFile": "./google-services.json"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
+
+    "ios": {
+      "bundleIdentifier": "com.muthuraj14.lmappadmin"
     },
-    "plugins": [
-      "expo-router",
-      "expo-web-browser"
-    ],
+
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+
     "extra": {
-      "router": {},
       "eas": {
-        "projectId": "22cef874-1506-4a22-9105-29170f1af7a7"
+        "projectId": "adc3a848-a6f3-4998-9743-b0c2fda7bad1"
       }
-    },
-    "owner": "muthuraj14"
+    }
   }
 }
