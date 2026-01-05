@@ -15,7 +15,7 @@ const SIGN_IN = gql`
 `;
 
 export default function SignIn() {
-const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showForgot, setShowForgot] = useState(false);
@@ -24,9 +24,10 @@ const [showPassword, setShowPassword] = useState(false);
   const [signIn, { loading, error }] = useMutation(SIGN_IN, {
     onCompleted: async (data) => {
       await AsyncStorage.setItem('token', data.signIn.token);
+      await AsyncStorage.setItem('userId', data.signIn.userId);
       router.replace('/Menu');
     },
-  
+
   });
 
   return (
@@ -58,7 +59,7 @@ const [showPassword, setShowPassword] = useState(false);
             placeholder="example@example.com"
             placeholderTextColor="#6B7280"
             value={email}
-           onChangeText={(t) => {
+            onChangeText={(t) => {
               setEmail(t);
             }}
           />
@@ -74,7 +75,7 @@ const [showPassword, setShowPassword] = useState(false);
               placeholderTextColor="#6B7280"
               secureTextEntry={!showPassword}
               value={password}
-               onChangeText={(t) => {
+              onChangeText={(t) => {
                 setPassword(t);
                 setShowForgot(false); // 🔹 RESET
               }}
@@ -88,15 +89,15 @@ const [showPassword, setShowPassword] = useState(false);
             </TouchableOpacity>
           </View>
         </View>
-          {/* Forgot Password (static) */}
-<TouchableOpacity
-  onPress={() => router.push("/forgot-password")}
-  className="mb-4"
->
-  <Text className="text-gray-500 text-sm text-right">
-    Forgot Password?
-  </Text>
-</TouchableOpacity>
+        {/* Forgot Password (static) */}
+        <TouchableOpacity
+          onPress={() => router.push("/forgot-password")}
+          className="mb-4"
+        >
+          <Text className="text-gray-500 text-sm text-right">
+            Forgot Password?
+          </Text>
+        </TouchableOpacity>
 
 
         {/* Login Button */}

@@ -39,6 +39,7 @@ export default function SignUp() {
   const [signUp, { loading, error }] = useMutation(SIGN_UP, {
     onCompleted: async (data) => {
       await AsyncStorage.setItem('token', data.signUp.token)
+      await AsyncStorage.setItem('userId', data.signUp.userId)
       router.replace('/sign-in')
     },
   })

@@ -93,7 +93,7 @@ const Orders = () => {
   /* ------------------ DISH AGGREGATION ------------------ */
 
   const dishStats = useMemo(() => {
-    const map: any = {}
+    const map = {}
 
     orders.forEach(order => {
       order.items.forEach(item => {
@@ -144,7 +144,7 @@ const Orders = () => {
 
   return (
     <View className="flex-1 bg-white">
-      
+
       {/* 🔥 HEADER */}
       <View className="bg-orange-500 px-6 pt-14 pb-8 rounded-b-[32px]">
         <Text className="text-orange-100 text-xs font-bold tracking-widest uppercase">
@@ -159,14 +159,12 @@ const Orders = () => {
       <View className="mx-5 mt-6 bg-orange-50 rounded-full p-1 flex-row">
         <TouchableOpacity
           onPress={() => setView('orders')}
-          className={`flex-1 py-3 rounded-full ${
-            view === 'orders' ? 'bg-orange-500' : ''
-          }`}
+          className={`flex-1 py-3 rounded-full ${view === 'orders' ? 'bg-orange-500' : ''
+            }`}
         >
           <Text
-            className={`text-center font-semibold ${
-              view === 'orders' ? 'text-white' : 'text-orange-600'
-            }`}
+            className={`text-center font-semibold ${view === 'orders' ? 'text-white' : 'text-orange-600'
+              }`}
           >
             Orders
           </Text>
@@ -174,14 +172,12 @@ const Orders = () => {
 
         <TouchableOpacity
           onPress={() => setView('dishes')}
-          className={`flex-1 py-3 rounded-full ${
-            view === 'dishes' ? 'bg-orange-500' : ''
-          }`}
+          className={`flex-1 py-3 rounded-full ${view === 'dishes' ? 'bg-orange-500' : ''
+            }`}
         >
           <Text
-            className={`text-center font-semibold ${
-              view === 'dishes' ? 'text-white' : 'text-orange-600'
-            }`}
+            className={`text-center font-semibold ${view === 'dishes' ? 'text-white' : 'text-orange-600'
+              }`}
           >
             Dish Summary
           </Text>
@@ -231,7 +227,7 @@ const Orders = () => {
           keyExtractor={item => item.orderId.toString()}
           renderItem={({ item }) => (
             <View className="bg-white rounded-3xl p-5 mb-6 shadow-sm border border-gray-100">
-              
+
               <Text className="font-semibold text-gray-900 mb-3">
                 {item.userName}
               </Text>
