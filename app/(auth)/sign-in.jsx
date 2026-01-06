@@ -10,9 +10,11 @@ const SIGN_IN = gql`
     signIn(email: $email, password: $password) {
       token
       userId
+      name
     }
   }
 `;
+
 
 export default function SignIn() {
 const [showPassword, setShowPassword] = useState(false);
@@ -24,6 +26,7 @@ const [showPassword, setShowPassword] = useState(false);
   const [signIn, { loading, error }] = useMutation(SIGN_IN, {
     onCompleted: async (data) => {
       await AsyncStorage.setItem('token', data.signIn.token);
+      await AsyncStorage.setItem("userId", data.signIn.name);
       router.replace('/Menu');
     },
   

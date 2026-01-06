@@ -1,65 +1,26 @@
 {
   "project_info": {
-    "project_number": "504567416385",
-    "project_id": "grabit-cff7e",
-    "storage_bucket": "grabit-cff7e.firebasestorage.app"
+    "project_number": "630412811832",
+    "project_id": "lmadmin-3af66",
+    "storage_bucket": "lmadmin-3af66.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:504567416385:android:cf945f302eba376afda8c0",
-        "android_client_info": {
-          "package_name": "com.muthuraj14.lmApp"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "504567416385-oc7nht4559j5gb91uf8oolkun4t91iu6.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBj3FGPi2-sJtiYM629Cs1pNJjgLp-O1kM"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "504567416385-oc7nht4559j5gb91uf8oolkun4t91iu6.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:504567416385:android:a96eff276b01d011fda8c0",
+        "mobilesdk_app_id": "1:630412811832:android:dcb0218e8ecb323b5510cd",
         "android_client_info": {
           "package_name": "com.muthuraj14.lmappadmin"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "504567416385-oc7nht4559j5gb91uf8oolkun4t91iu6.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBj3FGPi2-sJtiYM629Cs1pNJjgLp-O1kM"
+          "current_key": "AIzaSyDqcF8iCkleRSb65ityiz7tgihalK8XPKg"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "504567416385-oc7nht4559j5gb91uf8oolkun4t91iu6.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
