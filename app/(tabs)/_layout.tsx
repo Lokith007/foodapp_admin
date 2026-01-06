@@ -1,10 +1,48 @@
 // tabs/_layout.tsx
-import { Tabs } from 'expo-router'
-import React, { useRef } from 'react'
+import { Tabs, useRouter, Redirect } from 'expo-router'
+import React, { useEffect, useState } from 'react'
+import { View, ActivityIndicator } from 'react-native'
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function TabsLayout() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const userId = await AsyncStorage.getItem('userId');
+
+        if (token && userId) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  if (isAuthenticated === null) {
+    // Show a loading indicator while checking auth status
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#E95322" />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    // Redirect to sign-in if not authenticated
+    return <Redirect href="/(auth)/sign-in" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
