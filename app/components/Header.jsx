@@ -16,16 +16,7 @@ export default function Header({ searchQuery, setSearchQuery, categories }) {
           />
           <Ionicons name="search" size={18} color="#f97316" />
         </View>
-        <TouchableOpacity className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-md">
-          <Ionicons name="cart-outline" size={20} color="#f97316" />
-        </TouchableOpacity>
-        <TouchableOpacity className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-md ml-2">
-          <Ionicons name="notifications-outline" size={20} color="#f97316" />
-        </TouchableOpacity>
-        <TouchableOpacity className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-md ml-2">
-          <Ionicons name="person-outline" size={20} color="#f97316" />
-        </TouchableOpacity>
-      </View>
+       </View>
 
       {/* Categories */}
       <View className="bg-[#f66c3a] rounded-2xl px-4 py-5 shadow-md">

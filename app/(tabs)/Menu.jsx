@@ -126,10 +126,17 @@ export default function FoodDeliveryApp() {
   };
 
   const menu = data?.getMenuByRestaurantName?.menu || [];
+      const filteredMenu = useMemo(() => {
+            return menu.filter((item) =>
+              item.name.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+          }, [menu, searchQuery]);
+
   const categories = useMemo(
     () => [...new Set(menu.map((item) => item.category))],
     [menu]
   );
+       
 
   if (loading || meLoading) return <Loading />;
   if (error) return <ErrorComponent />;
@@ -143,16 +150,29 @@ export default function FoodDeliveryApp() {
           categories={categories}
         />
 
-        <ScrollView className="flex-1 pt-4">
-          {menu
-            .filter((item) =>
-              item.name.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-            .map((item, idx) => (
-              <FoodCard key={idx} item={item} refetch={refetch} />
-            ))}
-          <View className="h-24" />
-        </ScrollView>
+       <ScrollView className="flex-1 pt-4">
+            {/* EMPTY STATE */}
+            {filteredMenu.length === 0 && (
+              <View className="flex-1 items-center justify-center mt-20">
+                <Ionicons name="fast-food-outline" size={64} color="#9CA3AF" />
+                <Text className="text-gray-500 text-lg mt-4 font-semibold">
+                  No items found
+                </Text>
+                <Text className="text-gray-400 text-sm mt-1 text-center px-6">
+                  Add new items or adjust your search
+                </Text>
+              </View>
+            )}
+
+            {/* MENU LIST */}
+            {filteredMenu.length > 0 &&
+              filteredMenu.map((item, idx) => (
+                <FoodCard key={idx} item={item} refetch={refetch} />
+              ))}
+
+            <View className="h-24" />
+          </ScrollView>
+
 
         {/* Floating Button */}
         <TouchableOpacity
