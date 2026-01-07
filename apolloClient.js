@@ -13,8 +13,8 @@ if (__DEV__) {
 
 // 1. HTTP Link for Queries & Mutations
 const httpLink = new HttpLink({
-   uri: 'https://lm-backend-zrtl.onrender.com/graphql', // ✅ Ensure /graphql
- // uri: 'http://172.16.6.117:4000/graphql',
+  uri: 'https://lm-backend-zrtl.onrender.com/graphql', // ✅ Ensure /graphql
+  //uri: 'http://172.16.6.117:4000/graphql',
 });
 
 // 2. WebSocket Link for Subscriptions

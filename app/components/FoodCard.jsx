@@ -10,6 +10,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { gql, useMutation, useQuery } from '@apollo/client';
@@ -30,6 +31,21 @@ const MODIFY_MENU = gql`
     )
   }
 `;
+
+const DELETE_FROM_MENU = gql`
+  mutation DeleteFromMenu(
+    $restaurantId: String!
+    $name: String!
+    $price: Float!
+  ) {
+    deleteFromMenu(
+      restaurantId: $restaurantId
+      name: $name
+      price: $price
+    )
+  }
+`;
+
 const ME = gql`
   query {
     me {
@@ -56,6 +72,18 @@ export default function FoodCard({ item, refetch }) {
     },
   });
 
+  const [deleteFromMenu, { loading: deleting }] = useMutation(DELETE_FROM_MENU, {
+    onCompleted: () => {
+      setModalVisible(false);
+      console.log('Menu item deleted successfully');
+      if (refetch) refetch();
+    },
+    onError: (err) => {
+      console.error('Delete failed:', err);
+      Alert.alert('Error', 'Failed to delete item');
+    },
+  });
+
   const handleSave = () => {
     modifyMenu({
       variables: {
@@ -73,6 +101,30 @@ export default function FoodCard({ item, refetch }) {
         },
       },
     });
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Item',
+      'Are you sure you want to delete this menu item?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            if (!restaurantId) return;
+            deleteFromMenu({
+              variables: {
+                restaurantId: restaurantId,
+                name: item.name,
+                price: item.price,
+              },
+            });
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -247,7 +299,20 @@ export default function FoodCard({ item, refetch }) {
               </ScrollView>
 
               {/* Footer Button */}
-              <View className="p-5 border-t border-gray-100 bg-white absolute bottom-0 w-full pb-10">
+              <View className="p-5 border-t border-gray-100 bg-white absolute bottom-0 w-full pb-10 flex-col gap-3">
+                {/* Delete Button */}
+                <TouchableOpacity
+                  onPress={handleDelete}
+                  disabled={deleting}
+                  className="bg-red-50 w-full py-4 rounded-xl flex-row justify-center items-center border border-red-100"
+                >
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                  <Text className="text-red-500 font-bold text-lg ml-2">
+                    {deleting ? 'Deleting...' : 'Delete Item'}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Save Button */}
                 <TouchableOpacity
                   onPress={handleSave}
                   className="bg-orange-600 w-full py-4 rounded-xl flex-row justify-center items-center shadow-md shadow-orange-200"
