@@ -7,30 +7,28 @@
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
-
     "splash": {
       "image": "./assets/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-
     "android": {
       "package": "com.muthuraj14.lmappadmin",
       "googleServicesFile": "./google-services.json"
     },
-
     "ios": {
       "bundleIdentifier": "com.muthuraj14.lmappadmin"
     },
-
     "runtimeVersion": {
       "policy": "appVersion"
     },
-
     "extra": {
       "eas": {
         "projectId": "adc3a848-a6f3-4998-9743-b0c2fda7bad1"
       }
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
   }
 }
