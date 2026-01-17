@@ -140,6 +140,11 @@ export default function FoodCard({ item, refetch }) {
           className="w-full h-48"
           resizeMode="cover"
         />
+        <View className={`absolute top-3 right-3 px-3 py-1 rounded-full shadow-sm z-10 ${item.isAvailable ? 'bg-green-100 border border-green-200' : 'bg-red-100 border border-red-200'}`}>
+          <Text className={`text-xs font-bold ${item.isAvailable ? 'text-green-700' : 'text-red-600'}`}>
+            {item.isAvailable ? 'Available' : 'Unavailable'}
+          </Text>
+        </View>
         <View className="p-4">
           <View className="flex-row justify-between items-start mb-2">
             <View className="flex-1 mr-2">
