@@ -95,6 +95,7 @@ export default function FoodCard({ item, refetch }) {
           description: editedItem.description,
           imageUrl: editedItem.imageUrl,
           isAvailable: editedItem.isAvailable,
+          isVeg: editedItem.isVeg,
           name: editedItem.name,
           price: parseFloat(editedItem.price),
           freq: item.freq, // keep old freq unchanged
@@ -141,9 +142,16 @@ export default function FoodCard({ item, refetch }) {
         />
         <View className="p-4">
           <View className="flex-row justify-between items-start mb-2">
-            <Text className="text-xl font-bold text-gray-900 flex-1 mr-2">
-              {item.name}
-            </Text>
+            <View className="flex-1 mr-2">
+              <View className="flex-row items-center mb-1">
+                <Text className="text-xl font-bold text-gray-900 flex-1">
+                  {item.name}
+                </Text>
+                <Text className="text-xs font-bold px-2 py-1 rounded ml-2" style={{ backgroundColor: item.isVeg ? '#10b981' : '#ef4444', color: '#ffffff' }}>
+                  {item.isVeg ? 'VEG' : 'NON-VEG'}
+                </Text>
+              </View>
+            </View>
             <View className="flex-row items-center bg-green-100 px-2 py-1 rounded-lg">
               <Text className="text-green-700 text-xs font-bold">
                 {item.freq ? item.freq.toFixed(1) : '4.5'} ★
@@ -277,6 +285,26 @@ export default function FoodCard({ item, refetch }) {
                 </View>
 
                 {/* Availability Section */}
+                <View className="bg-white border border-gray-100 rounded-xl p-4 mb-4 shadow-sm flex-row items-center justify-between">
+                  <View className="flex-1 pr-4">
+                    <Text className="text-gray-800 font-bold text-base mb-1">
+                      Item Type
+                    </Text>
+                    <Text className="text-gray-400 text-xs">
+                      Is this a vegetarian item?
+                    </Text>
+                  </View>
+                  <Switch
+                    trackColor={{ false: '#FEE2E2', true: '#DBEAFE' }}
+                    thumbColor={editedItem.isVeg ? '#0284C7' : '#DC2626'}
+                    ios_backgroundColor="#3e3e3e"
+                    onValueChange={(val) =>
+                      setEditedItem((prev) => ({ ...prev, isVeg: val }))
+                    }
+                    value={editedItem.isVeg}
+                  />
+                </View>
+
                 <View className="bg-white border border-gray-100 rounded-xl p-4 mb-24 shadow-sm flex-row items-center justify-between">
                   <View className="flex-1 pr-4">
                     <Text className="text-gray-800 font-bold text-base mb-1">

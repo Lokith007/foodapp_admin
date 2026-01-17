@@ -33,6 +33,7 @@ const GET_MENU = gql`
         freq
         imageUrl
         isAvailable
+        isVeg
         name
         price
       }
@@ -60,6 +61,7 @@ const ADD_TO_MENU = gql`
     $isAvailable: Boolean!
     $name: String!
     $price: Float!
+    $isVeg: Boolean!
   ) {
     addToMenu(
       restaurantId: $restaurantId
@@ -70,6 +72,7 @@ const ADD_TO_MENU = gql`
       isAvailable: $isAvailable
       name: $name
       price: $price
+      isVeg: $isVeg
     )
   }
 `;
@@ -83,6 +86,7 @@ export default function FoodDeliveryApp() {
     description: '',
     imageUrl: '',
     isAvailable: true,
+    isVeg: true,
     name: '',
     price: '',
   });
@@ -103,6 +107,7 @@ export default function FoodDeliveryApp() {
         description: '',
         imageUrl: '',
         isAvailable: true,
+        isVeg: true,
         name: '',
         price: '',
       });
@@ -119,6 +124,7 @@ export default function FoodDeliveryApp() {
         description: newItem.description,
         imageUrl: newItem.imageUrl,
         isAvailable: newItem.isAvailable,
+        isVeg: newItem.isVeg,
         name: newItem.name,
         price: parseFloat(newItem.price),
       },
@@ -287,6 +293,24 @@ export default function FoodDeliveryApp() {
                         setNewItem((p) => ({ ...p, imageUrl: t }))
                       }
                       className="text-base text-gray-700"
+                    />
+                  </View>
+
+                  <View className="bg-white border rounded-xl p-4 mb-4 flex-row justify-between">
+                    <View>
+                      <Text className="text-lg font-bold text-gray-900">
+                        Item Type
+                      </Text>
+                      <Text className="text-sm text-gray-500">
+                        Is this a vegetarian item?
+                      </Text>
+                    </View>
+                    <Switch
+                      value={newItem.isVeg}
+                      onValueChange={(v) =>
+                        setNewItem((p) => ({ ...p, isVeg: v }))
+                      }
+                      thumbColor={newItem.isVeg ? '#10b981' : '#ef4444'}
                     />
                   </View>
 
