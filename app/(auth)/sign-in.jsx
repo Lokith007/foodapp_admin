@@ -1,133 +1,216 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
+} from "react-native";
+import { useRouter, Link } from "expo-router";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { FIREBASE_AUTH } from "../../FirebaseConfig";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useMutation, gql } from '@apollo/client';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SIGN_IN = gql`
-  mutation SignIn($email: String!, $password: String!) {
-    signIn(email: $email, password: $password) {
-      token
-      userId
-      name
-    }
-  }
-`;
-
+const { width } = Dimensions.get("window");
 
 export default function SignIn() {
-const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showForgot, setShowForgot] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
-  const [signIn, { loading, error }] = useMutation(SIGN_IN, {
-    onCompleted: async (data) => {
-      await AsyncStorage.setItem('token', data.signIn.token);
-      await AsyncStorage.setItem("userId", data.signIn.name);
-      router.replace('/Menu');
-    },
-  
-  });
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(FIREBASE_AUTH, email, password);
+      router.replace("/(tabs)/Home");
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Login Failed", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <SafeAreaView className="flex-1 bg-yellow-400">
-      {/* Header */}
-      <View className="flex flex-row items-center justify-between px-4 py-4 pt-12">
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
-        <Text className="text-white text-lg font-semibold">Log In</Text>
-        <View className="w-6" />
-      </View>
-
-      {/* Main Card */}
-      <View className="flex-1 bg-gray-100 rounded-t-3xl mt-8 px-6 py-8">
-        {/* Welcome */}
-        <View className="mb-8">
-          <Text className="text-2xl font-bold text-gray-800 mb-4">Welcome</Text>
-          <Text className="text-gray-600 text-sm leading-relaxed">
-            Manage restaurants, track orders, and keep everything running smoothly in one place.
-          </Text>
+    <LinearGradient colors={["#FF3B30", "#FF6B6B"]} style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.inner}
+      >
+        <View style={styles.header}>
+          <Ionicons name="shield-checkmark" size={80} color="white" />
+          <Text style={styles.title}>SOS SHIELD</Text>
+          <Text style={styles.subtitle}>Admin Login Portal</Text>
         </View>
 
-        {/* Email */}
-        <View className="mb-6">
-          <Text className="text-gray-800 font-medium mb-2">Email or Mobile Number</Text>
-          <TextInput
-            className="bg-yellow-200 rounded-lg px-4 py-4 text-gray-800"
-            placeholder="example@example.com"
-            placeholderTextColor="#6B7280"
-            value={email}
-           onChangeText={(t) => {
-              setEmail(t);
-            }}
-          />
-        </View>
-
-        {/* Password */}
-        <View className="mb-4">
-          <Text className="text-gray-800 font-medium mb-2">Password</Text>
-          <View className="bg-yellow-200 rounded-lg px-4 py-4 flex flex-row items-center justify-between">
+        <View style={styles.form}>
+          <View style={styles.inputLabelContainer}>
+            <Text style={styles.inputLabel}>Email Address</Text>
+          </View>
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
             <TextInput
-              className="flex-1 text-gray-800 tracking-widest"
+              style={styles.input}
+              placeholder="example@example.com"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholderTextColor="#999"
+            />
+          </View>
+
+          <View style={styles.inputLabelContainer}>
+            <Text style={styles.inputLabel}>Password</Text>
+          </View>
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
               placeholder="••••••••••••"
-              placeholderTextColor="#6B7280"
-              secureTextEntry={!showPassword}
               value={password}
-               onChangeText={(t) => {
-                setPassword(t);
-                setShowForgot(false); // 🔹 RESET
-              }}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              placeholderTextColor="#999"
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
               <Ionicons
                 name={showPassword ? "eye-outline" : "eye-off-outline"}
                 size={22}
-                color="#F97316"
+                color="#FF3B30"
               />
             </TouchableOpacity>
           </View>
-        </View>
-          {/* Forgot Password (static) */}
-<TouchableOpacity
-  onPress={() => router.push("/forgot-password")}
-  className="mb-4"
->
-  <Text className="text-gray-500 text-sm text-right">
-    Forgot Password?
-  </Text>
-</TouchableOpacity>
 
-
-        {/* Login Button */}
-        <TouchableOpacity
-          className="w-full bg-orange-500 py-4 rounded-full shadow-lg"
-          disabled={loading}
-          onPress={() => signIn({ variables: { email, password } })}
-        >
-          <Text className="text-white font-bold text-lg text-center">
-            {loading ? "Logging in..." : "Log In"}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Show Error if any */}
-        {error && (
-          <Text className="text-red-500 text-sm mt-4 text-center">
-            {error.message}
-          </Text>
-        )}
-
-        {/* Don't have account? */}
-        <View className="mt-6 flex-row justify-center">
-          <Text className="text-gray-600 text-sm">Don’t have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/sign-up')}>
-            <Text className="text-orange-500 text-sm font-semibold">Sign Up</Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleSignIn}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FF3B30" />
+            ) : (
+              <Text style={styles.buttonText}>LOGIN</Text>
+            )}
           </TouchableOpacity>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Don't have an account? </Text>
+            <Link href="/(auth)/sign-up" asChild>
+              <TouchableOpacity>
+                <Text style={styles.linkText}>Register Now</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  inner: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 24,
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 40,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "900",
+    color: "white",
+    marginTop: 10,
+    letterSpacing: 2,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "rgba(255,255,255,0.8)",
+    marginTop: 5,
+  },
+  form: {
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  inputLabelContainer: {
+    marginBottom: 8,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#EEE",
+    borderRadius: 12,
+    marginBottom: 16,
+    paddingHorizontal: 12,
+    backgroundColor: "#FAFAFA",
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    height: 50,
+    color: "#333",
+    fontSize: 16,
+  },
+  button: {
+    backgroundColor: "white",
+    height: 55,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
+    borderWidth: 2,
+    borderColor: "#FF3B30",
+  },
+  buttonText: {
+    color: "#FF3B30",
+    fontSize: 18,
+    fontWeight: "bold",
+    letterSpacing: 1,
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 20,
+  },
+  footerText: {
+    color: "#666",
+    fontSize: 14,
+  },
+  linkText: {
+    color: "#FF3B30",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+});

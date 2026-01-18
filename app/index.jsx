@@ -1,59 +1,34 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator , Text, Image, Pressable } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect } from "react";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
+import { useAuth } from "../lib/authContext";
 
-export default function Home() {
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+export default function Index() {
+    const { user, loading } = useAuth();
+    const router = useRouter();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = await AsyncStorage.getItem('token');
-      if (token) {
-        // User already logged in → go to main tabs
-        router.replace('/Menu');
-      }
-      setLoading(false);
-    };
-    checkAuth();
-  }, []);
-  return (
-    <LinearGradient
-      colors={['#FB923C', '#F97316', '#EF4444']}
-      className="flex-1 justify-center items-center px-6"
-    >
-      {/* Logo */}
-      <Image
-        source={require('../assets/logo.png')}
-        className="w-38 h-36 mb-8"
-        resizeMode="contain"
-      />
+    useEffect(() => {
+        if (!loading) {
+            if (user) {
+                router.replace("/(tabs)/Home");
+            } else {
+                router.replace("/(auth)/sign-in");
+            }
+        }
+    }, [user, loading]);
 
-      {/* Stylish Brand Name */}
-      <Text className="text-6xl font-extrabold mb-6 tracking-wider">
-        <Text className="text-yellow-300 italic">Grab</Text>
-        <Text className="text-white font-light">It</Text>
-      </Text>
-
-      {/* Description */}
-<Text style={{ fontFamily: 'serif', color: 'white', textAlign: 'center', fontSize: 16, opacity: 0.9, marginBottom: 40 }}>
-      The smartest way to order food
-    </Text>
-
-
-
-      {/* Login Button */}
-      <Pressable
-  onPress={() => router.push("/(auth)/sign-in")}
-  className="w-full bg-yellow-300 py-4 rounded-full shadow-lg"
->
-  <Text className="text-red-500 font-bold text-lg text-center">
-    Log In
-  </Text>
-</Pressable>
-
-    </LinearGradient>
-  );
+    return (
+        <View style={styles.container}>
+            <ActivityIndicator size="large" color="#ef4444" />
+        </View>
+    );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#fff",
+    },
+});
