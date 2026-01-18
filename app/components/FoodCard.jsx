@@ -14,6 +14,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { gql, useMutation, useQuery } from '@apollo/client';
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import DropDownPicker from "react-native-dropdown-picker";
 
 // GraphQL mutation
 const MODIFY_MENU = gql`
@@ -55,11 +58,52 @@ const ME = gql`
     }
   }
 `;
+const GET_FOOD_CATEGORIES = gql`
+  query GetFoodCategories {
+    getFoodCategories {
+      foodCategories {
+        id
+        name
+        image
+      }
+    }
+  }
+`;
+
+
 export default function FoodCard({ item, refetch }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [editedItem, setEditedItem] = useState({ ...item });
   const { data: meData, loading: meLoading } = useQuery(ME);
   const restaurantId = meData?.me?.name || null;
+  const { data: catData, loading: catLoading } = useQuery(GET_FOOD_CATEGORIES);
+  const foodCategories = catData?.getFoodCategories?.foodCategories || [];
+
+  const [catOpen, setCatOpen] = useState(false);
+  const [catValue, setCatValue] = useState(item.category || null);
+
+  const catItems = React.useMemo(() => {
+    return foodCategories.map((cat) => ({
+      label: cat.name,
+      value: cat.name,
+      icon: () => (
+        <Image
+          source={{ uri: cat.image }}
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: 8,
+            marginRight: 10,
+          }}
+        />
+      ),
+    }));
+  }, [foodCategories]);
+
+  // keep dropdown synced when editedItem.category changes
+  React.useEffect(() => {
+    setCatValue(editedItem.category || null);
+  }, [editedItem.category]);
 
   const [modifyMenu, { loading }] = useMutation(MODIFY_MENU, {
     onCompleted: () => {
@@ -168,165 +212,257 @@ export default function FoodCard({ item, refetch }) {
       </TouchableOpacity>
 
       {/* Modal for Editing */}
-      <Modal visible={modalVisible} animationType="slide" transparent={true}>
-        <View className="flex-1 bg-black/40 justify-center items-center">
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="w-full h-full flex-1 justify-end"
-          >
-            <View className="bg-white h-[90%] w-full rounded-t-3xl overflow-hidden flex-1">
-              {/* Header */}
-              <View className="flex-row justify-between items-center p-5 border-b border-gray-100">
-                <Text className="text-xl font-bold text-gray-800">
-                  Edit Item
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setModalVisible(false)}
-                  className="bg-gray-100 p-2 rounded-full"
-                >
-                  <Ionicons name="close" size={24} color="#333" />
-                </TouchableOpacity>
-              </View>
+      <SafeAreaView>
+        {/* Modal for Editing */}
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View className="flex-1 bg-black/40 justify-end">
 
-              <ScrollView
-                className="flex-1 px-5 pt-2"
-                showsVerticalScrollIndicator={false}
+            <SafeAreaView className="bg-white rounded-t-3xl overflow-hidden h-[90%]">
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                className="flex-1"
+                keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
               >
-                {/* Image Section */}
-                <View className="items-center my-4">
-                  <Image
-                    source={{
-                      uri:
-                        editedItem.imageUrl || 'https://picsum.photos/400/250',
-                    }}
-                    className="w-full h-48 rounded-2xl"
-                    resizeMode="cover"
-                  />
-                  <Text className="text-gray-400 text-xs mt-2 text-center">
-                    Preview Image
-                  </Text>
+
+                {/* Header */}
+                <View className="flex-row justify-between items-center p-5 border-b border-gray-100">
+                  <Text className="text-xl font-bold text-gray-800">Edit Item</Text>
+
+                  <TouchableOpacity
+                    onPress={() => setModalVisible(false)}
+                    className="bg-gray-100 p-2 rounded-full"
+                  >
+                    <Ionicons name="close" size={24} color="#333" />
+                  </TouchableOpacity>
                 </View>
 
-                {/* Essentials Section */}
-                <Text className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-3 mt-2">
-                  Essentials
-                </Text>
-                <View className="space-y-3 mb-6">
-                  <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
-                    <TextInput
-                      value={editedItem.name}
-                      placeholder="Item Name"
-                      onChangeText={(text) =>
-                        setEditedItem((prev) => ({ ...prev, name: text }))
+                {/* ✅ Scroll that moves up when keyboard opens */}
+                <KeyboardAwareScrollView
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                  enableOnAndroid={true}
+                  extraScrollHeight={120}
+                  contentContainerStyle={{ paddingBottom: 180 }}
+                  className="flex-1 px-5 pt-2"
+                >
+                  {/* Image Section */}
+                  <View className="items-center my-4">
+                    <Image
+                      source={{
+                        uri: editedItem.imageUrl || "https://picsum.photos/400/250",
+                      }}
+                      className="w-full h-48 rounded-2xl"
+                      resizeMode="cover"
+                    />
+                    <Text className="text-gray-400 text-xs mt-2 text-center">
+                      Preview Image
+                    </Text>
+                  </View>
+
+                  {/* Essentials Section */}
+                  <Text className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-3 mt-2">
+                    Essentials
+                  </Text>
+
+                  <View className="space-y-4 mb-6">
+
+                    {/* Item Name */}
+                    <View>
+                      <Text className="text-gray-600 text-sm font-semibold mb-2">
+                        Item Name
+                      </Text>
+                      <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
+                        <TextInput
+                          value={editedItem.name}
+                          placeholder="Enter item name"
+                          onChangeText={(text) =>
+                            setEditedItem((prev) => ({ ...prev, name: text }))
+                          }
+                          className="text-gray-800 font-medium text-base"
+                        />
+                      </View>
+                    </View>
+
+                    {/* Price + Category */}
+                    <View className="flex-row space-x-3" style={{ zIndex: 999 }}>
+
+                      {/* Price */}
+                      <View className="flex-1" style={{ zIndex: 1 }}>
+                        <Text className="text-gray-600 text-sm font-semibold mb-2 my-2">
+                          Price (₹)
+                        </Text>
+                        <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 mr-2">
+                          <TextInput
+                            value={String(editedItem.price)}
+                            placeholder="Enter price"
+                            keyboardType="numeric"
+                            onChangeText={(text) =>
+                              setEditedItem((prev) => ({ ...prev, price: text }))
+                            }
+                            className="text-gray-800 font-medium text-base"
+                          />
+                        </View>
+                      </View>
+
+                      {/* Category */}
+                      <View className="flex-1" style={{ zIndex: 999 }}>
+                        <Text className="text-gray-600 text-sm font-semibold mb-2 my-2">
+                          Category
+                        </Text>
+
+                        <DropDownPicker
+                          open={catOpen}
+                          value={catValue}
+                          items={catItems}
+                          setOpen={setCatOpen}
+                          setValue={(callback) => {
+                            const selected = callback(catValue);
+                            setCatValue(selected);
+                            setEditedItem((prev) => ({ ...prev, category: selected }));
+                          }}
+                          placeholder="Select category"
+                          listMode="SCROLLVIEW"
+                          style={{
+                            backgroundColor: "#F9FAFB",
+                            borderColor: "#F3F4F6",
+                            borderRadius: 12,
+                            minHeight: 48,
+                            paddingHorizontal: 12,
+                            paddingVertical: 20,
+                          }}
+                          dropDownContainerStyle={{
+                            borderColor: "#F3F4F6",
+                            borderRadius: 12,
+                            backgroundColor: "white",
+                          }}
+                          textStyle={{
+                            fontSize: 15,
+                            color: "#111827",
+                            fontWeight: "600",
+                          }}
+                          placeholderStyle={{
+                            color: "#9CA3AF",
+                            fontWeight: "500",
+                          }}
+                          ArrowDownIconComponent={() => (
+                            <Ionicons name="chevron-down" size={18} color="#6B7280" />
+                          )}
+                          ArrowUpIconComponent={() => (
+                            <Ionicons name="chevron-up" size={18} color="#6B7280" />
+                          )}
+                          TickIconComponent={() => (
+                            <Ionicons name="checkmark" size={18} color="#EA580C" />
+                          )}
+                        />
+                      </View>
+
+
+                    </View>
+                  </View>
+
+                  {/* Details Section */}
+                  <Text className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-3">
+                    Details
+                  </Text>
+
+                  {/* Description */}
+                  <View className="mb-4">
+                    <Text className="text-gray-600 text-sm font-semibold mb-2">
+                      Description
+                    </Text>
+                    <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
+                      <TextInput
+                        value={editedItem.description}
+                        placeholder="Write a short description"
+                        multiline
+                        onChangeText={(text) =>
+                          setEditedItem((prev) => ({ ...prev, description: text }))
+                        }
+                        className="text-gray-800 text-base h-20"
+                        textAlignVertical="top"
+                      />
+                    </View>
+                  </View>
+
+                  {/* Image URL */}
+                  <View className="mb-6">
+                    <Text className="text-gray-600 text-sm font-semibold mb-2">
+                      Image URL
+                    </Text>
+                    <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
+                      <TextInput
+                        value={editedItem.imageUrl}
+                        placeholder="Paste image link"
+                        onChangeText={(text) =>
+                          setEditedItem((prev) => ({ ...prev, imageUrl: text }))
+                        }
+                        className="text-gray-500 text-sm"
+                      />
+                    </View>
+                  </View>
+
+
+                  {/* Availability Section */}
+                  <View className="bg-white border border-gray-100 rounded-xl p-4 mb-10 shadow-sm flex-row items-center justify-between">
+                    <View className="flex-1 pr-4">
+                      <Text className="text-gray-800 font-bold text-base mb-1">
+                        Item Availability
+                      </Text>
+                      <Text className="text-gray-400 text-xs">
+                        Item is currently visible on menu
+                      </Text>
+                    </View>
+
+                    <Switch
+                      trackColor={{ false: "#e0e0e0", true: "#FFEDD5" }}
+                      thumbColor={editedItem.isAvailable ? "#EA580C" : "#f4f3f4"}
+                      onValueChange={(val) =>
+                        setEditedItem((prev) => ({ ...prev, isAvailable: val }))
                       }
-                      className="text-gray-800 font-medium text-base"
+                      value={editedItem.isAvailable}
                     />
                   </View>
+                </KeyboardAwareScrollView>
 
-                  <View className="flex-row space-x-3">
-                    <View className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
-                      <TextInput
-                        value={String(editedItem.price)}
-                        placeholder="Price"
-                        keyboardType="numeric"
-                        onChangeText={(text) =>
-                          setEditedItem((prev) => ({ ...prev, price: text }))
-                        }
-                        className="text-gray-800 font-medium text-base"
-                      />
-                    </View>
-                    <View className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
-                      <TextInput
-                        value={editedItem.category}
-                        placeholder="Category"
-                        onChangeText={(text) =>
-                          setEditedItem((prev) => ({ ...prev, category: text }))
-                        }
-                        className="text-gray-800 font-medium text-base"
-                      />
-                    </View>
+                {/* ✅ Footer stays fixed but does NOT hide inputs because paddingBottom is added */}
+                <View className="p-5 border-t border-gray-100 bg-white">
+                  <View className="flex-col gap-3">
+
+                    <TouchableOpacity
+                      onPress={handleDelete}
+                      disabled={deleting}
+                      className="bg-red-50 w-full py-4 rounded-xl flex-row justify-center items-center border border-red-100"
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                      <Text className="text-red-500 font-bold text-lg ml-2">
+                        {deleting ? "Deleting..." : "Delete Item"}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={handleSave}
+                      className="bg-orange-600 w-full py-4 rounded-xl flex-row justify-center items-center"
+                    >
+                      <Ionicons name="save-outline" size={20} color="white" />
+                      <Text className="text-white font-bold text-lg ml-2">
+                        {loading ? "Saving Changes..." : "Save Changes"}
+                      </Text>
+                    </TouchableOpacity>
+
                   </View>
                 </View>
 
-                {/* Details Section */}
-                <Text className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-3">
-                  Details
-                </Text>
-                <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 mb-3">
-                  <TextInput
-                    value={editedItem.description}
-                    placeholder="Item Description"
-                    multiline
-                    onChangeText={(text) =>
-                      setEditedItem((prev) => ({ ...prev, description: text }))
-                    }
-                    className="text-gray-800 text-base h-20"
-                    textAlignVertical="top"
-                  />
-                </View>
+              </KeyboardAvoidingView>
+            </SafeAreaView>
+          </View>
+        </Modal>
 
-                <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 mb-6">
-                  <TextInput
-                    value={editedItem.imageUrl}
-                    placeholder="Image URL"
-                    onChangeText={(text) =>
-                      setEditedItem((prev) => ({ ...prev, imageUrl: text }))
-                    }
-                    className="text-gray-500 text-sm"
-                  />
-                </View>
-
-                {/* Availability Section */}
-                <View className="bg-white border border-gray-100 rounded-xl p-4 mb-24 shadow-sm flex-row items-center justify-between">
-                  <View className="flex-1 pr-4">
-                    <Text className="text-gray-800 font-bold text-base mb-1">
-                      Item Availability
-                    </Text>
-                    <Text className="text-gray-400 text-xs">
-                      Item is currently visible on menu
-                    </Text>
-                  </View>
-                  <Switch
-                    trackColor={{ false: '#e0e0e0', true: '#FFEDD5' }}
-                    thumbColor={editedItem.isAvailable ? '#EA580C' : '#f4f3f4'}
-                    ios_backgroundColor="#3e3e3e"
-                    onValueChange={(val) =>
-                      setEditedItem((prev) => ({ ...prev, isAvailable: val }))
-                    }
-                    value={editedItem.isAvailable}
-                  />
-                </View>
-              </ScrollView>
-
-              {/* Footer Button */}
-              <View className="p-5 border-t border-gray-100 bg-white absolute bottom-0 w-full pb-10 flex-col gap-3">
-                {/* Delete Button */}
-                <TouchableOpacity
-                  onPress={handleDelete}
-                  disabled={deleting}
-                  className="bg-red-50 w-full py-4 rounded-xl flex-row justify-center items-center border border-red-100"
-                >
-                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                  <Text className="text-red-500 font-bold text-lg ml-2">
-                    {deleting ? 'Deleting...' : 'Delete Item'}
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Save Button */}
-                <TouchableOpacity
-                  onPress={handleSave}
-                  className="bg-orange-600 w-full py-4 rounded-xl flex-row justify-center items-center shadow-md shadow-orange-200"
-                >
-                  <Ionicons name="save-outline" size={20} color="white" />
-                  <Text className="text-white font-bold text-lg ml-2">
-                    {loading ? 'Saving Changes...' : 'Save Changes'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
+      </SafeAreaView>
     </>
   );
 }
