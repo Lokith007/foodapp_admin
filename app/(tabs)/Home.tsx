@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
+  Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../lib/authContext";
@@ -23,17 +24,18 @@ import {
   setDoc,
   deleteDoc,
   onSnapshot,
+  addDoc,
+  updateDoc,
+  serverTimestamp,
+  query,
+  where,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import { EmergencyContactCard } from "../../components/EmergencyContactCard";
 import { sendSOSNotificationToContacts } from "../../lib/notifications";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-
-interface Contact {
-  id: string;
-  name: string;
-  expoPushToken: string;
-}
 
 export default function Home() {
   const { user } = useAuth();
@@ -49,10 +51,13 @@ export default function Home() {
   const [coordinates, setCoordinates] = useState({ lat: 13.0827, lng: 80.2707 });
   const [showFirstAidModal, setShowFirstAidModal] = useState(false);
 
-  const [allContacts, setAllContacts] = useState<Contact[]>([]);
-  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
+  const [allContacts, setAllContacts] = useState([]);
+  const [selectedContactIds, setSelectedContactIds] = useState(new Set());
   const [loadingContacts, setLoadingContacts] = useState(true);
   const [isEditingContacts, setIsEditingContacts] = useState(false);
+
+  const [incomingSOS, setIncomingSOS] = useState(null);
+  const [showIncomingSOS, setShowIncomingSOS] = useState(false);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -63,12 +68,12 @@ export default function Home() {
     const fetchAllContacts = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "users"));
-        const contacts: Contact[] = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
+        const contacts = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
           // Don't show current user as emergency contact
-          if (doc.id !== user.uid && data.expoPushToken && data.expoPushToken !== "not_available") {
-            contacts.push({ id: doc.id, name: data.name || data.email, expoPushToken: data.expoPushToken });
+          if (docSnap.id !== user.uid && data.expoPushToken && data.expoPushToken !== "not_available") {
+            contacts.push({ id: docSnap.id, name: data.name || data.email, expoPushToken: data.expoPushToken });
           }
         });
         setAllContacts(contacts);
@@ -81,9 +86,9 @@ export default function Home() {
 
     const selectedContactsRef = collection(db, "users", user.uid, "selectedContacts");
     const unsubscribe = onSnapshot(selectedContactsRef, (snapshot) => {
-      const selectedIds = new Set<string>();
-      snapshot.forEach((doc) => {
-        selectedIds.add(doc.data().contactId);
+      const selectedIds = new Set();
+      snapshot.forEach((docSnap) => {
+        selectedIds.add(docSnap.data().contactId);
       });
       setSelectedContactIds(selectedIds);
     });
@@ -91,6 +96,61 @@ export default function Home() {
     fetchAllContacts();
     return () => unsubscribe();
   }, [user]);
+
+  // Listener for incoming SOS events
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, "sosEvents", user.uid, "incoming"),
+      where("status", "==", "active"),
+      orderBy("createdAt", "desc"),
+      limit(1)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const docSnap = snapshot.docs[0];
+        setIncomingSOS({ id: docSnap.id, ...docSnap.data() });
+        setShowIncomingSOS(true);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const openGoogleMaps = (lat, lng) => {
+    const url = `https://www.google.com/maps?q=${lat},${lng}`;
+    Linking.openURL(url);
+  };
+
+  const createSOSEventForContacts = async (selectedIds, payload) => {
+    try {
+      const promises = Array.from(selectedIds).map((receiverUid) => {
+        return addDoc(collection(db, "sosEvents", String(receiverUid), "incoming"), {
+          ...payload,
+          status: "active",
+          createdAt: serverTimestamp(),
+        });
+      });
+      await Promise.all(promises);
+    } catch (err) {
+      console.error("Error creating SOS events:", err);
+    }
+  };
+
+  const updateSOSStatus = async (eventId, newStatus) => {
+    try {
+      if (!user) return;
+      const docRef = doc(db, "sosEvents", user.uid, "incoming", eventId);
+      await updateDoc(docRef, { status: newStatus });
+      if (newStatus === "resolved") {
+        setShowIncomingSOS(false);
+      }
+    } catch (err) {
+      console.error("Error updating SOS status:", err);
+    }
+  };
 
   // Pulse animation for map marker
   useEffect(() => {
@@ -117,7 +177,7 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [isSimulatingAccident]);
 
-  const toggleContactSelection = async (contact: Contact) => {
+  const toggleContactSelection = async (contact) => {
     if (!user) return;
 
     const contactDocRef = doc(db, "users", user.uid, "selectedContacts", contact.id);
@@ -144,9 +204,11 @@ export default function Home() {
       const selectedSnapshot = await getDocs(
         collection(db, "users", user.uid, "selectedContacts")
       );
-      const tokens: string[] = [];
-      selectedSnapshot.forEach((doc) => {
-        tokens.push(doc.data().expoPushToken);
+      const tokens = [];
+      const selectedIds = new Set();
+      selectedSnapshot.forEach((docSnap) => {
+        tokens.push(docSnap.data().expoPushToken);
+        selectedIds.add(docSnap.data().contactId);
       });
 
       if (tokens.length === 0) {
@@ -155,20 +217,26 @@ export default function Home() {
         return;
       }
 
+      const sosPayload = {
+        fromUserId: user.uid,
+        fromName: user.displayName || user.email,
+        lat: coordinates.lat,
+        lng: coordinates.lng,
+        speed: speed,
+        impact: impact,
+      };
+
       const result = await sendSOSNotificationToContacts(tokens, {
         title: "🚨 SOS Emergency Alert",
         body: `${user.displayName || user.email} needs help. Tap to open location.`,
         data: {
-          lat: coordinates.lat,
-          lng: coordinates.lng,
-          speed: speed,
-          impact: impact,
+          ...sosPayload,
           timestamp: new Date().toISOString(),
-          userId: user.uid,
         },
       });
 
       if (result.success) {
+        await createSOSEventForContacts(selectedIds, sosPayload);
         setSosSent(true);
         setTimeout(() => setSosSent(false), 5000);
       } else {
@@ -204,7 +272,7 @@ export default function Home() {
     }
   };
 
-  const getImpactColor = (val: number) => {
+  const getImpactColor = (val) => {
     if (val < 1) return "#10b981";
     if (val < 4) return "#f59e0b";
     return "#ef4444";
@@ -251,39 +319,16 @@ export default function Home() {
         </LinearGradient>
 
         <View style={styles.contentPadding}>
-          <View
-            style={[
-              styles.statusCard,
-              isSimulatingAccident ? styles.statusCardEmergency : styles.statusCardNormal,
-            ]}
-          >
+          <View style={[styles.statusCard, styles.statusCardNormal]}>
             <View style={styles.cardHeader}>
               <View style={styles.iconContainer}>
-                <Ionicons
-                  name="car-outline"
-                  size={28}
-                  color={isSimulatingAccident ? "#ef4444" : "#374151"}
-                />
+                <Ionicons name="car-outline" size={28} color="#374151" />
               </View>
               <View style={styles.statusInfo}>
-                <Text style={styles.statusTitle}>
-                  {isSimulatingAccident ? "Collision Detected!" : "Vehicle Status"}
-                </Text>
+                <Text style={styles.statusTitle}>Vehicle Status</Text>
                 <View style={styles.statusBadge}>
-                  <View
-                    style={[
-                      styles.statusDot,
-                      { backgroundColor: isSimulatingAccident ? "#ef4444" : "#10b981" },
-                    ]}
-                  />
-                  <Text
-                    style={[
-                      styles.statusText,
-                      { color: isSimulatingAccident ? "#ef4444" : "#10b981" },
-                    ]}
-                  >
-                    {isSimulatingAccident ? "Emergency Protocol Active" : "System Active"}
-                  </Text>
+                  <View style={[styles.statusDot, { backgroundColor: "#10b981" }]} />
+                  <Text style={[styles.statusText, { color: "#10b981" }]}>System Active</Text>
                 </View>
               </View>
             </View>
@@ -301,9 +346,7 @@ export default function Home() {
               <View style={styles.verticalDivider} />
               <View style={styles.metricItem}>
                 <Text style={styles.metricLabel}>Impact Force</Text>
-                <Text
-                  style={[styles.metricValue, { color: impact > 5 ? "#ef4444" : "#1C1C1E" }]}
-                >
+                <Text style={[styles.metricValue, { color: impact > 5 ? "#ef4444" : "#1C1C1E" }]}>
                   {impact}
                   <Text style={styles.metricUnit}> G</Text>
                 </Text>
@@ -322,21 +365,13 @@ export default function Home() {
               />
             </View>
 
-            <TouchableOpacity
-              onPress={toggleAccidentSimulation}
-              style={styles.simulationButton}
-            >
+            <TouchableOpacity onPress={toggleAccidentSimulation} style={styles.simulationButton}>
               <Ionicons
                 name={isSimulatingAccident ? "refresh-circle" : "shield-half"}
                 size={20}
                 color={isSimulatingAccident ? "#ef4444" : "#10b981"}
               />
-              <Text
-                style={[
-                  styles.simulationButtonText,
-                  { color: isSimulatingAccident ? "#ef4444" : "#10b981" },
-                ]}
-              >
+              <Text style={[styles.simulationButtonText, { color: isSimulatingAccident ? "#ef4444" : "#10b981" }]}>
                 {isSimulatingAccident ? "Reset Normal State" : "Simulate Accident"}
               </Text>
             </TouchableOpacity>
@@ -352,14 +387,8 @@ export default function Home() {
                 onPress={() => setIsEditingContacts(!isEditingContacts)}
                 style={styles.editButton}
               >
-                <Ionicons
-                  name={isEditingContacts ? "chevron-up" : "create-outline"}
-                  size={18}
-                  color="#007AFF"
-                />
-                <Text style={styles.editButtonText}>
-                  {isEditingContacts ? "Done" : "Edit"}
-                </Text>
+                <Ionicons name={isEditingContacts ? "chevron-up" : "create-outline"} size={18} color="#007AFF" />
+                <Text style={styles.editButtonText}>{isEditingContacts ? "Done" : "Edit"}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -378,27 +407,23 @@ export default function Home() {
                     onSelect={() => toggleContactSelection(contact)}
                   />
                 ))}
-                {allContacts.length === 0 && (
-                  <Text style={styles.emptyText}>No other users found.</Text>
-                )}
+                {allContacts.length === 0 && <Text style={styles.emptyText}>No other users found.</Text>}
               </View>
             )
           ) : (
             <View style={styles.contactsList}>
               {allContacts
-                .filter(c => selectedContactIds.has(c.id))
+                .filter((c) => selectedContactIds.has(c.id))
                 .map((contact) => (
                   <EmergencyContactCard
                     key={contact.id}
                     name={contact.name}
                     expoPushToken={contact.expoPushToken}
                     isSelected={true}
-                    onSelect={() => { }} // Selection disabled in default view
+                    onSelect={() => { }}
                   />
                 ))}
-              {selectedContactIds.size === 0 && (
-                <Text style={styles.emptyText}>No emergency contacts selected.</Text>
-              )}
+              {selectedContactIds.size === 0 && <Text style={styles.emptyText}>No emergency contacts selected.</Text>}
             </View>
           )}
 
@@ -445,10 +470,7 @@ export default function Home() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>First Aid Guide</Text>
-              <TouchableOpacity
-                onPress={() => setShowFirstAidModal(false)}
-                style={styles.closeButton}
-              >
+              <TouchableOpacity onPress={() => setShowFirstAidModal(false)} style={styles.closeButton}>
                 <Ionicons name="close" size={24} color="#4b5563" />
               </TouchableOpacity>
             </View>
@@ -457,7 +479,7 @@ export default function Home() {
               {firstAidSteps.map((step, idx) => (
                 <View key={idx} style={styles.firstAidStep}>
                   <View style={styles.firstAidIconContainer}>
-                    <Ionicons name={step.icon as any} size={24} color="#ef4444" />
+                    <Ionicons name={step.icon} size={24} color="#ef4444" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.firstAidStepTitle}>{step.title}</Text>
@@ -483,10 +505,7 @@ export default function Home() {
             </Text>
 
             <View style={styles.confirmActions}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => setShowSOSModal(false)}
-              >
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowSOSModal(false)}>
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmBtn} onPress={handleSOSConfirm}>
@@ -495,6 +514,67 @@ export default function Home() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      <Modal visible={showIncomingSOS} animationType="fade" transparent={false}>
+        <SafeAreaView style={styles.incomingSOSOverlay}>
+          <StatusBar barStyle="light-content" />
+          <View style={styles.incomingSOSContent}>
+            <View style={styles.incomingSOSHeader}>
+              <Ionicons name="warning" size={80} color="white" />
+              <Text style={styles.incomingSOSTitle}>🚨 INCOMING SOS ALERT</Text>
+            </View>
+
+            <View style={styles.senderCard}>
+              <Text style={styles.senderName}>{incomingSOS?.fromName}</Text>
+              <Text style={styles.senderStatus}>Needs Immediate Assistance</Text>
+
+              <View style={styles.metricsGrid}>
+                <View style={styles.gridItem}>
+                  <Text style={styles.gridLabel}>Speed</Text>
+                  <Text style={styles.gridValue}>{incomingSOS?.speed} km/h</Text>
+                </View>
+                <View style={styles.gridItem}>
+                  <Text style={styles.gridLabel}>Impact</Text>
+                  <Text style={styles.gridValue}>{incomingSOS?.impact} G</Text>
+                </View>
+              </View>
+
+              <View style={styles.locationContainer}>
+                <Ionicons name="location" size={20} color="#FF3B30" />
+                <Text style={styles.locationText}>
+                  Lat: {incomingSOS?.lat?.toFixed(4)}, Lng: {incomingSOS?.lng?.toFixed(4)}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.mapButton}
+                onPress={() => openGoogleMaps(incomingSOS?.lat, incomingSOS?.lng)}
+              >
+                <Ionicons name="map" size={24} color="white" />
+                <Text style={styles.buttonText}>Open Location</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.ackButton}
+                onPress={() => updateSOSStatus(incomingSOS?.id, "acknowledged")}
+              >
+                <Ionicons name="checkmark-circle" size={24} color="white" />
+                <Text style={styles.buttonText}>Acknowledge</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.resolveButton}
+                onPress={() => updateSOSStatus(incomingSOS?.id, "resolved")}
+              >
+                <Ionicons name="checkmark-done-circle" size={24} color="white" />
+                <Text style={styles.buttonText}>Resolve</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
       </Modal>
     </View>
   );
@@ -797,6 +877,122 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 25,
+  },
+  incomingSOSOverlay: {
+    flex: 1,
+    backgroundColor: "#FF3B30",
+  },
+  incomingSOSContent: {
+    flex: 1,
+    padding: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  incomingSOSHeader: {
+    alignItems: "center",
+    marginBottom: 40,
+  },
+  incomingSOSTitle: {
+    color: "white",
+    fontSize: 28,
+    fontWeight: "900",
+    marginTop: 10,
+    textAlign: "center",
+  },
+  senderCard: {
+    backgroundColor: "white",
+    width: "100%",
+    borderRadius: 24,
+    padding: 24,
+    alignItems: "center",
+    marginBottom: 40,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  senderName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1C1C1E",
+  },
+  senderStatus: {
+    fontSize: 16,
+    color: "#FF3B30",
+    fontWeight: "600",
+    marginTop: 4,
+  },
+  metricsGrid: {
+    flexDirection: "row",
+    marginTop: 24,
+    width: "100%",
+    justifyContent: "space-around",
+  },
+  gridItem: {
+    alignItems: "center",
+  },
+  gridLabel: {
+    fontSize: 12,
+    color: "#8E8E93",
+    fontWeight: "bold",
+    textTransform: "uppercase",
+  },
+  gridValue: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#1C1C1E",
+    marginTop: 4,
+  },
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 24,
+    backgroundColor: "#F2F2F7",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  locationText: {
+    fontSize: 14,
+    color: "#3A3A3C",
+    marginLeft: 8,
+    fontWeight: "500",
+  },
+  actionButtons: {
+    width: "100%",
+  },
+  mapButton: {
+    backgroundColor: "#007AFF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  ackButton: {
+    backgroundColor: "#34C759",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  resolveButton: {
+    backgroundColor: "#1C1C1E",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 16,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginLeft: 12,
   },
   modalTitle: {
     fontSize: 24,
