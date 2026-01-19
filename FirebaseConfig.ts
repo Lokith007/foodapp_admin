@@ -1,21 +1,17 @@
-import { initializeApp, getApp, getApps } from "firebase/app";
-import { initializeAuth, getReactNativePersistence } from "firebase/auth";
+import { initializeApp } from "firebase/app";
+import {getAuth} from "firebase/auth"
 import { getFirestore } from "firebase/firestore";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
+  
 const firebaseConfig = {
-  apiKey: "AIzaSyBoFjeN4i7jm2T5QM0qDMGZapKXytVVROw",
-  authDomain: "saferide-6b128.firebaseapp.com",
-  projectId: "saferide-6b128",
-  storageBucket: "saferide-6b128.firebasestorage.app",
-  messagingSenderId: "402528714473",
-  appId: "1:402528714473:web:7470f1ecdad51c7d197a78",
+  apiKey: "AIzaSyAyT5T5r2qbMFtjjsSoagTDxOPZu1qvhF8",
+  authDomain: "grabit-cff7e.firebaseapp.com",
+  projectId: "grabit-cff7e",
+  storageBucket: "grabit-cff7e.firebasestorage.app",
+  messagingSenderId: "504567416385",
+  appId: "1:504567416385:web:43a46f898e55bd56fda8c0"
 };
-
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-
-export const FIREBASE_AUTH = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
-
-export const db = getFirestore(app);
+ 
+// Initialize Firebase
+export const FIREBASE_APP = initializeApp(firebaseConfig);
+export const FIREBASE_AUTH = getAuth(FIREBASE_APP);
+export const db = getFirestore(FIREBASE_APP);

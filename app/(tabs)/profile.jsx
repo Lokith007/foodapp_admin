@@ -1,137 +1,407 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, ScrollView, SafeAreaView, StatusBar, TouchableOpacity, Alert } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React from 'react';
+import { View, Text, ImageBackground,TextInput, TouchableOpacity, Switch, ScrollView ,ActivityIndicator} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
+import { gql, useQuery, useMutation } from '@apollo/client';
+import { Modal, FlatList } from "react-native";
+
+const GET_MY_RESTAURANT = gql`
+  query {
+    getMyRestaurant {
+      hotelName
+      logo
+      isOpen
+      openingTime
+      closingTime
+    }
+  }
+`;
+const EDIT_RESTAURANT = gql`
+  mutation EditRestaurantDetails(
+    $openingTime: String
+    $closingTime: String  
+    $isOpen: Boolean
+    $imageUrl: String
+  ) {
+    editRestaurantDetails(
+      openingTime: $openingTime
+      closingTime: $closingTime
+      isOpen: $isOpen
+      imageUrl: $imageUrl
+    )
+  }
+`;
+
+const GET_ME = gql`
+  query {
+    me {
+      email
+    }
+  }
+`;
+
+const UPDATE_RESTAURANT_STATUS = gql`
+  mutation UpdateRestaurantStatus($isOpen: Boolean!) {
+    updateRestaurantStatus(isOpen: $isOpen)
+  }
+`;
 
 export default function Profile() {
-  const [formData, setFormData] = useState({
-    fullName: "Muthuraj",
-    phone: "+91 98765 43210",
-    emergencyContact: "+91 98765 09876",
-    bloodGroup: "A+",
-    medicalNotes: "No known allergies. Asthma patient.",
-    vehicleNumber: "TN 01 AB 1234",
-    vehicleType: "Luxury Sedan",
-  });
+   const router = useRouter();
+ const { data, loading, error } = useQuery(GET_MY_RESTAURANT);
 
-  const [isSaving, setIsSaving] = useState(false);
+const { data: meData } = useQuery(GET_ME);
+const [editRestaurant, { loading: saving }] = useMutation(
+  EDIT_RESTAURANT,
+  {
+    onCompleted: () => {
+      setIsEditing(false);
+    },
+  }
+);
+const [updateStatus] = useMutation(UPDATE_RESTAURANT_STATUS);
 
-  const handleSave = () => {
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      Alert.alert("Profile Updated", "Your emergency information has been saved successfully.");
-    }, 1500);
-  };
+const [isEditing, setIsEditing] = React.useState(false);
+const [openingTime, setOpeningTime] = React.useState(null);
+const [closingTime, setClosingTime] = React.useState(null);
+const [showTimeModal, setShowTimeModal] = React.useState(false);
+const [timeType, setTimeType] = React.useState(null); // "opening" | "closing"
 
-  const InputField = ({ label, value, onChangeText, icon, placeholder }) => (
-    <View className="mb-6">
-      <Text className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-2 ml-1">{label}</Text>
-      <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-2xl px-4 py-1">
-        <Ionicons name={icon} size={20} color="#9ca3af" />
-        <TextInput
-          className="flex-1 py-3 ml-3 text-gray-800 font-bold"
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor="#d1d5db"
-        />
-      </View>
-    </View>
-  );
+const [tempHour, setTempHour] = React.useState("12");
+const [tempMinute, setTempMinute] = React.useState("00");
+const [tempAmPm, setTempAmPm] = React.useState("AM");
 
+const hours = Array.from({ length: 12 }, (_, i) => String(i + 1));
+const minutes = Array.from({ length: 60 }, (_, i) =>
+  i.toString().padStart(2, "0")
+);
+
+const [imageUrl, setImageUrl] = React.useState("");
+const [localIsOpen, setLocalIsOpen] = React.useState(null);
+const adminEmail = meData?.me?.email || "Admin";
+
+React.useEffect(() => {
+  if (data?.getMyRestaurant && localIsOpen === null) {
+    setLocalIsOpen(data.getMyRestaurant.isOpen);
+  }
+}, [data, localIsOpen]);
+
+  if (loading) {
+  return <ActivityIndicator size="large" style={{ marginTop: 40 }} />;
+}
+
+if (error) {
+  const isAuthError =
+    error.message.includes("Not authenticated") ||
+    error.message.includes("jwt") ||
+    error.message.includes("token");
+  
   return (
-    <View className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" />
-      <ScrollView className="flex-1 p-6" showsVerticalScrollIndicator={false}>
-        <View className="mb-10">
-          <Text className="text-3xl font-bold text-gray-900">Safety Profile</Text>
-          <Text className="text-gray-500">Information for emergency responders</Text>
-        </View>
+    
+    <View className="flex-1 justify-center items-center px-6">
+      <Text className="text-red-500 text-center mb-4">
+        {error.message}
+      </Text>
 
-        <View className="mb-10">
-          <View className="flex-row items-center mb-6">
-            <View className="w-10 h-10 bg-red-600 rounded-2xl items-center justify-center mr-4">
-              <Ionicons name="person" size={20} color="white" />
-            </View>
-            <Text className="text-xl font-black text-gray-800">Personal Details</Text>
-          </View>
-
-          <InputField
-            label="Full Name"
-            value={formData.fullName}
-            onChangeText={(txt) => setFormData({ ...formData, fullName: txt })}
-            icon="person-outline"
-          />
-          <InputField
-            label="Phone Number"
-            value={formData.phone}
-            onChangeText={(txt) => setFormData({ ...formData, phone: txt })}
-            icon="call-outline"
-          />
-          <InputField
-            label="Emergency Contact"
-            value={formData.emergencyContact}
-            onChangeText={(txt) => setFormData({ ...formData, emergencyContact: txt })}
-            icon="megaphone-outline"
-          />
-        </View>
-
-        <View className="mb-10">
-          <View className="flex-row items-center mb-6">
-            <View className="w-10 h-10 bg-blue-600 rounded-2xl items-center justify-center mr-4">
-              <Ionicons name="medical" size={20} color="white" />
-            </View>
-            <Text className="text-xl font-black text-gray-800">Medical Data</Text>
-          </View>
-
-          <InputField
-            label="Blood Group"
-            value={formData.bloodGroup}
-            onChangeText={(txt) => setFormData({ ...formData, bloodGroup: txt })}
-            icon="water-outline"
-          />
-          <View className="mb-6">
-            <Text className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-2 ml-1">Medical Notes</Text>
-            <View className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 min-h-[100px]">
-              <TextInput
-                multiline
-                className="text-gray-800 font-bold"
-                value={formData.medicalNotes}
-                onChangeText={(txt) => setFormData({ ...formData, medicalNotes: txt })}
-              />
-            </View>
-          </View>
-        </View>
-
-        <View className="mb-10">
-          <View className="flex-row items-center mb-6">
-            <View className="w-10 h-10 bg-gray-900 rounded-2xl items-center justify-center mr-4">
-              <Ionicons name="car" size={20} color="white" />
-            </View>
-            <Text className="text-xl font-black text-gray-800">Vehicle Info</Text>
-          </View>
-
-          <InputField
-            label="Vehicle Number"
-            value={formData.vehicleNumber}
-            onChangeText={(txt) => setFormData({ ...formData, vehicleNumber: txt })}
-            icon="barcode-outline"
-          />
-        </View>
-
+      {isAuthError && (
         <TouchableOpacity
-          className={`py-5 rounded-3xl items-center mb-10 shadow-xl ${isSaving ? 'bg-gray-400' : 'bg-gray-900 shadow-gray-400'}`}
-          activeOpacity={0.8}
-          onPress={handleSave}
-          disabled={isSaving}
+          onPress={async () => {
+            await AsyncStorage.removeItem("token");
+            router.replace("/sign-in");
+          }}
+          className="bg-red-500 px-6 py-3 rounded-xl"
         >
-          <Text className="text-white font-black text-lg">
-            {isSaving ? "Saving..." : "Save Emergency Profile"}
-          </Text>
+          <Text className="text-white font-bold">Logout</Text>
         </TouchableOpacity>
-      </ScrollView>
+      )}
     </View>
   );
 }
 
 
+if (!data || !data.getMyRestaurant) {
+  return <Text style={{ marginTop: 40, textAlign: 'center' }}>No restaurant data</Text>;
+}
+
+const restaurant = data.getMyRestaurant;
+const startEditing = () => {
+  setOpeningTime(restaurant.openingTime || "");
+  setClosingTime(restaurant.closingTime || "");
+  setImageUrl(restaurant.logo || "");
+  setIsEditing(true);
+};
+const handleToggleStatus = async (value) => {
+  setLocalIsOpen(value); // instant UI
+
+  try {
+    await updateStatus({
+      variables: { isOpen: value },
+    });
+  } catch (err) {
+    console.error("❌ Status update failed", err);
+    setLocalIsOpen(!value); // rollback
+  }
+};
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('token');
+    router.replace('/sign-in');
+  };
+  return (
+    <ScrollView className="flex-1 bg-white">
+      {/* Header with Background Image */}
+<ImageBackground
+  source={{ uri: restaurant.logo }}
+  className="h-44 justify-end"
+  resizeMode="cover"
+>
+  <View className="bg-black/50 p-4">
+    <Text className="text-white text-xl font-bold">
+      {restaurant.hotelName}
+    </Text>
+    <Text className="text-gray-200 text-sm mt-1">
+      Admin: {adminEmail}
+    </Text>
+  </View>
+</ImageBackground>
+
+{/* INFO SECTION */}
+<View className="m-4 p-4 bg-white rounded-2xl shadow-md border border-gray-200">
+
+  {/* OPENING TIME */}
+  <Text className="text-sm text-gray-700 mb-1">Opening Time</Text>
+
+  {isEditing ? (
+    <TouchableOpacity
+      onPress={() => {
+        setTimeType("opening");
+        setShowTimeModal(true);
+      }}
+      className="border p-3 rounded bg-white mb-3"
+    >
+      <Text className="text-black">
+        {openingTime || "Select Opening Time"}
+      </Text>
+    </TouchableOpacity>
+  ) : (
+    <Text className="mb-3">Opening Time: {restaurant.openingTime}</Text>
+  )}
+
+  {/* CLOSING TIME */}
+  <Text className="text-sm text-gray-700 mb-1">Closing Time</Text>
+
+  {isEditing ? (
+    <TouchableOpacity
+      onPress={() => {
+        setTimeType("closing");
+        setShowTimeModal(true);
+      }}
+      className="border p-3 rounded bg-white mb-3"
+    >
+      <Text className="text-black">
+        {closingTime || "Select Closing Time"}
+      </Text>
+    </TouchableOpacity>
+  ) : (
+    <Text className="mb-3">Closing Time: {restaurant.closingTime}</Text>
+  )}
+
+  {/* IMAGE URL */}
+  {isEditing && (
+    <TextInput
+      value={imageUrl}
+      onChangeText={setImageUrl}
+      placeholder="Restaurant Image URL"
+      placeholderTextColor="#9ca3af"
+      className="border p-2 rounded mt-2 text-black"
+      autoCapitalize="none"
+    />
+  )}
+
+  {/* STATS */}
+  <View className="flex-row justify-between mt-6">
+    <View className="items-center flex-1">
+      <Text className="text-lg font-bold text-gray-800">120</Text>
+      <Text className="text-xs text-gray-500 mt-1">Orders this Week</Text>
+    </View>
+    <View className="items-center flex-1">
+      <Text className="text-lg font-bold text-gray-800">18</Text>
+      <Text className="text-xs text-gray-500 mt-1">Orders Today</Text>
+    </View>
+  </View>
+
+  {/* STATUS TOGGLE */}
+  <View className="flex-row items-center justify-between mt-6">
+    <Text className="text-sm text-gray-700">Restaurant Status:</Text>
+    <Switch
+      value={localIsOpen}
+      onValueChange={handleToggleStatus}
+      thumbColor={localIsOpen ? "#4ade80" : "#f87171"}
+    />
+  </View>
+
+  {/* SAVE / EDIT BUTTON */}
+  {isEditing ? (
+    <TouchableOpacity
+      onPress={() =>
+        editRestaurant({
+          variables: {
+            openingTime,
+            closingTime,
+            isOpen: localIsOpen,
+            imageUrl,
+          },
+        })
+      }
+      className="bg-green-500 py-3 rounded-xl mt-4 items-center"
+    >
+      <Text className="text-white font-bold">Save Changes</Text>
+    </TouchableOpacity>
+  ) : (
+    <TouchableOpacity
+      onPress={startEditing}
+      className="bg-orange-500 py-3 rounded-xl mt-4 items-center"
+    >
+      <Text className="text-white font-bold">Edit Details</Text>
+    </TouchableOpacity>
+  )}
+
+  {/* LOGOUT BUTTON */}   
+
+        <TouchableOpacity
+  onPress={handleLogout}
+  className="mt-4 bg-red-500 py-3 rounded-xl items-center"
+>
+  <Text className="text-white font-bold">Logout</Text>
+</TouchableOpacity>
+
+ </View>
+<Modal
+  visible={showTimeModal}
+  transparent
+  animationType="fade"
+>
+  <View className="flex-1 bg-black/40 justify-center items-center">
+    <View className="bg-white rounded-2xl p-4 w-[90%] max-w-md">
+
+      {/* TITLE */}
+      <Text className="text-lg font-bold text-center mb-4">
+        Select Time
+      </Text>
+
+      {/* HOURS */}
+      <Text className="text-sm font-semibold text-center mb-2">
+        Hours
+      </Text>
+
+      <FlatList
+        data={hours}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(item) => item}
+        contentContainerStyle={{ paddingHorizontal: 10 }}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={() => setTempHour(item)}
+            style={{
+              width: 52,
+              height: 42,
+              marginHorizontal: 6,
+              borderRadius: 10,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor:
+                tempHour === item ? "#f97316" : "#e5e7eb",
+            }}
+          >
+            <Text className="text-white font-bold">
+              {item}
+            </Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      {/* MINUTES */}
+      <Text className="text-sm font-semibold text-center mt-4 mb-2">
+        Minutes
+      </Text>
+
+      <FlatList
+        data={minutes}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(item) => item}
+        contentContainerStyle={{ paddingHorizontal: 10 }}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={() => setTempMinute(item)}
+            style={{
+              width: 52,
+              height: 42,
+              marginHorizontal: 6,
+              borderRadius: 10,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor:
+                tempMinute === item ? "#f97316" : "#e5e7eb",
+            }}
+          >
+            <Text className="text-white font-bold">
+              {item}
+            </Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      {/* AM / PM */}
+      <View className="flex-row justify-center mt-5">
+        {["AM", "PM"].map((a) => (
+          <TouchableOpacity
+            key={a}
+            onPress={() => setTempAmPm(a)}
+            className={`px-6 py-2 mx-2 rounded-xl ${
+              tempAmPm === a ? "bg-orange-500" : "bg-gray-200"
+            }`}
+          >
+            <Text className="text-white font-bold">
+              {a}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* ACTION BUTTONS */}
+      <View className="flex-row justify-between mt-6">
+        <TouchableOpacity
+          onPress={() => setShowTimeModal(false)}
+          className="px-5 py-2 rounded-xl bg-gray-300"
+        >
+          <Text className="font-bold text-gray-800">Cancel</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => {
+            const time = `${tempHour}:${tempMinute} ${tempAmPm}`;
+
+            if (timeType === "opening") {
+              setOpeningTime(time);
+            } else {
+              setClosingTime(time);
+            }
+
+            setShowTimeModal(false);
+          }}
+          className="px-6 py-2 rounded-xl bg-green-500"
+        >
+          <Text className="text-white font-bold">Confirm</Text>
+        </TouchableOpacity>
+      </View>
+
+    </View>
+  </View>
+</Modal>
+
+   
+    </ScrollView>
+  );
+}

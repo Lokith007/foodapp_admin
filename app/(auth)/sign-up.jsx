@@ -1,296 +1,177 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from "react-native";
-import { useRouter, Link } from "expo-router";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { FIREBASE_AUTH, db } from "../../FirebaseConfig";
-import { doc, setDoc } from "firebase/firestore";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import { usePushNotifications } from "../../usePushNotification";
+import React, { useState } from "react"
+import { View, Text, TextInput, TouchableOpacity, SafeAreaView, Alert } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+import { useRouter } from "expo-router"
+import { useMutation, useQuery, gql } from '@apollo/client'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Picker } from '@react-native-picker/picker'
+
+const SIGN_UP = gql`
+  mutation SignUp($email: String!, $password: String!, $name: String!) {
+    signUp(email: $email, password: $password, name: $name) {
+      token
+      userId
+    }
+  }
+`
+
+const GET_RESTAURENTS = gql`
+  query {
+    getRestaurents {
+      displayName
+      login
+      name
+    }
+  }
+`
 
 export default function SignUp() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter()
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null)
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
 
-  const { expoPushToken } = usePushNotifications();
-  const router = useRouter();
+  // fetch allowed emails
+  const { data, loading: loadingRestaurants, error: restaurantsError } = useQuery(GET_RESTAURENTS)
 
-  const handleSignUp = async () => {
-    if (!name || !email || !password || !confirmPassword) {
-      Alert.alert("Error", "Please fill in all fields");
-      return;
+  const [signUp, { loading, error }] = useMutation(SIGN_UP, {
+    onCompleted: async (data) => {
+      await AsyncStorage.setItem('token', data.signUp.token)
+      router.replace('/sign-in')
+    },
+  })
+
+  const handleSignUp = () => {
+    if (!selectedRestaurant) {
+      Alert.alert('Select Email', 'Please choose an email from the list.')
+      return
     }
-
     if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
-      return;
+      Alert.alert('Password Mismatch', 'Passwords do not match.')
+      return
     }
-
-    setLoading(true);
-    try {
-      const userCredential = await createUserWithEmailAndPassword(FIREBASE_AUTH, email, password);
-      const user = userCredential.user;
-
-      // Update profile with name
-      await updateProfile(user, { displayName: name });
-
-      // Save user details to Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        name,
-        email,
-        expoPushToken: expoPushToken || "not_available",
-        role: "admin",
-        createdAt: new Date().toISOString(),
-      });
-
-      router.replace("/(tabs)/Home");
-    } catch (error) {
-      console.error(error);
-      Alert.alert("Registration Failed", error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    signUp({
+      variables: {
+        email: selectedRestaurant.login,
+        name: selectedRestaurant.name,
+        password,
+      },
+    })
+  }
 
   return (
-    <LinearGradient colors={["#FF3B30", "#FF6B6B"]} style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.inner}
-      >
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          <View style={styles.header}>
-            <Ionicons name="person-add-outline" size={80} color="white" />
-            <Text style={styles.title}>CREATE ACCOUNT</Text>
-            <Text style={styles.subtitle}>Join the SOS Shield Network</Text>
+    <SafeAreaView className="flex-1 bg-yellow-400">
+      {/* Header */}
+      <View className="flex flex-row items-center justify-between px-4 py-4 pt-12">
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="white" />
+        </TouchableOpacity>
+        <Text className="text-white text-lg font-semibold">Sign Up</Text>
+        <View className="w-6" />
+      </View>
+
+      {/* Main Card */}
+      <View className="flex-1 bg-gray-100 rounded-t-3xl mt-8 px-6 py-8">
+        {/* Title */}
+        <View className="mb-8">
+          <Text className="text-2xl font-bold text-gray-800 mb-4">Create Account</Text>
+          <Text className="text-gray-600 text-sm leading-relaxed">
+            Enter your details to create a new account.
+          </Text>
+        </View>
+
+        {/* Email Dropdown */}
+        <View className="mb-6">
+          <Text className="text-gray-800 font-medium mb-2">Select Email</Text>
+          <View className="bg-yellow-200 rounded-lg">
+            {loadingRestaurants ? (
+              <Text className="px-4 py-4 text-gray-600">Loading emails...</Text>
+            ) : restaurantsError ? (
+              <Text className="px-4 py-4 text-red-500">{restaurantsError.message}</Text>
+            ) : (
+              <Picker
+                selectedValue={selectedRestaurant?.login || ''}
+                onValueChange={(value) => {
+                  const rest = data?.getRestaurents.find((r) => r.login === value)
+                  setSelectedRestaurant(rest || null)
+                }}
+                style={{ color: '#374151' }}
+              >
+                <Picker.Item label="-- Choose an email --" value="" />
+                {data?.getRestaurents?.map((rest) => (
+                  <Picker.Item
+                    key={rest.login}
+                    label={`${rest.displayName} (${rest.login})`}
+                    value={rest.login}
+                  />
+                ))}
+              </Picker>
+            )}
           </View>
+        </View>
 
-          <View style={styles.form}>
-            <View style={styles.inputLabelContainer}>
-              <Text style={styles.inputLabel}>Full Name</Text>
-            </View>
-            <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="John Doe"
-                value={name}
-                onChangeText={setName}
-                placeholderTextColor="#999"
-              />
-            </View>
-
-            <View style={styles.inputLabelContainer}>
-              <Text style={styles.inputLabel}>Email Address</Text>
-            </View>
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="example@example.com"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                placeholderTextColor="#999"
-              />
-            </View>
-
-            <View style={styles.inputLabelContainer}>
-              <Text style={styles.inputLabel}>Password</Text>
-            </View>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                placeholderTextColor="#999"
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Ionicons
-                  name={showPassword ? "eye-outline" : "eye-off-outline"}
-                  size={22}
-                  color="#FF3B30"
-                />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.inputLabelContainer}>
-              <Text style={styles.inputLabel}>Confirm Password</Text>
-            </View>
-            <View style={styles.inputContainer}>
-              <Ionicons name="shield-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={!showPassword}
-                placeholderTextColor="#999"
-              />
-            </View>
-
-            <View style={styles.tokenInfo}>
+        {/* Password */}
+        <View className="mb-6">
+          <Text className="text-gray-800 font-medium mb-2">Password</Text>
+          <View className="bg-yellow-200 rounded-lg px-4 py-4 flex flex-row items-center justify-between">
+            <TextInput
+              secureTextEntry={!showPassword}
+              placeholder="********"
+              placeholderTextColor="#6B7280"
+              className="flex-1 text-gray-800 tracking-widest"
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
               <Ionicons
-                name={expoPushToken ? "checkmark-circle" : "sync-outline"}
-                size={16}
-                color={expoPushToken ? "#10b981" : "#f59e0b"}
+                name={showPassword ? "eye-outline" : "eye-off-outline"}
+                size={22}
+                color="#F97316"
               />
-              <Text style={[styles.tokenText, { color: expoPushToken ? "#10b981" : "#f59e0b" }]}>
-                {expoPushToken ? "Push Token Ready" : "Retrieving Push Token..."}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleSignUp}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FF3B30" />
-              ) : (
-                <Text style={styles.buttonText}>REGISTER</Text>
-              )}
             </TouchableOpacity>
-
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Already have an account? </Text>
-              <Link href="/(auth)/sign-in" asChild>
-                <TouchableOpacity>
-                  <Text style={styles.linkText}>Login</Text>
-                </TouchableOpacity>
-              </Link>
-            </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </LinearGradient>
-  );
-}
+        </View>
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  inner: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 24,
-    justifyContent: "center",
-    minHeight: "100%",
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 30,
-    marginTop: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "white",
-    marginTop: 10,
-    letterSpacing: 2,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "rgba(255,255,255,0.8)",
-    marginTop: 5,
-  },
-  form: {
-    backgroundColor: "white",
-    borderRadius: 25,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 5,
-  },
-  inputLabelContainer: {
-    marginBottom: 8,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#EEE",
-    borderRadius: 12,
-    marginBottom: 16,
-    paddingHorizontal: 12,
-    backgroundColor: "#FAFAFA",
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    height: 50,
-    color: "#333",
-    fontSize: 16,
-  },
-  tokenInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-    paddingLeft: 4,
-  },
-  tokenText: {
-    fontSize: 12,
-    marginLeft: 6,
-    fontWeight: "600",
-  },
-  button: {
-    backgroundColor: "white",
-    height: 55,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 5,
-    borderWidth: 2,
-    borderColor: "#FF3B30",
-  },
-  buttonText: {
-    color: "#FF3B30",
-    fontSize: 18,
-    fontWeight: "bold",
-    letterSpacing: 1,
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 20,
-  },
-  footerText: {
-    color: "#666",
-    fontSize: 14,
-  },
-  linkText: {
-    color: "#FF3B30",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-});
+        {/* Confirm Password */}
+        <View className="mb-12">
+          <Text className="text-gray-800 font-medium mb-2">Confirm Password</Text>
+          <View className="bg-yellow-200 rounded-lg px-4 py-4 flex flex-row items-center justify-between">
+            <TextInput
+              secureTextEntry={!showConfirmPassword}
+              placeholder="********"
+              placeholderTextColor="#6B7280"
+              className="flex-1 text-gray-800 tracking-widest"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+              <Ionicons
+                name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+                size={22}
+                color="#F97316"
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Sign Up Button */}
+        <TouchableOpacity
+          className="w-full bg-orange-500 py-4 rounded-full shadow-lg"
+          disabled={loading}
+          onPress={handleSignUp}
+        >
+          <Text className="text-white font-bold text-lg text-center">
+            {loading ? "Signing Up..." : "Sign Up"}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Show Error */}
+        {error && (
+          <Text className="text-red-500 text-sm mt-4 text-center">{error.message}</Text>
+        )}
+      </View>
+    </SafeAreaView>
+  )
+}
