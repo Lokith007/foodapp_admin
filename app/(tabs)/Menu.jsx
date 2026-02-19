@@ -194,7 +194,8 @@ export default function FoodDeliveryApp() {
   if (error) return <ErrorComponent />;
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F66C3A]" edges={['top']}>
+        <SafeAreaView className="flex-1 bg-white" edges={['bottom', 'left', 'right']}>
+    
       <View className="flex-1 bg-[#F5F5F5]">
         <Header
           searchQuery={searchQuery}
@@ -247,7 +248,7 @@ export default function FoodDeliveryApp() {
           <View className="flex-1 bg-black/50 justify-end">
 
             {/* ✅ Safe Area + Rounded Top */}
-            <SafeAreaView className="bg-white rounded-t-3xl overflow-hidden h-[92%]">
+            <SafeAreaView className="bg-white rounded-t-3xl overflow-hidden h-[92%]" edges={['top', 'left', 'right']}>
               <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 className="flex-1"
@@ -481,19 +482,21 @@ export default function FoodDeliveryApp() {
                     </View>
                   </KeyboardAwareScrollView>
 
-                  {/* ✅ Fixed Footer Button */}
-                  <View className="absolute bottom-0 w-full p-5 bg-white border-t border-gray-100">
-                    <TouchableOpacity
-                      onPress={handleAdd}
-                      disabled={adding}
-                      className="bg-orange-600 py-4 rounded-xl flex-row justify-center items-center"
-                    >
-                      <Ionicons name="add-circle" size={24} color="white" />
-                      <Text className="text-white font-bold text-lg ml-2">
-                        {adding ? "Adding..." : "Add Item"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                  {/* ✅ Fixed Footer Button with Insets Padding */}
+                  <SafeAreaView edges={['bottom']} className="absolute bottom-0 w-full bg-white border-t border-gray-100">
+                    <View className="p-5">
+                      <TouchableOpacity
+                        onPress={handleAdd}
+                        disabled={adding}
+                        className="bg-orange-600 py-4 rounded-xl flex-row justify-center items-center"
+                      >
+                        <Ionicons name="add-circle" size={24} color="white" />
+                        <Text className="text-white font-bold text-lg ml-2">
+                          {adding ? "Adding..." : "Add Item"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </SafeAreaView>
 
                 </View>
               </KeyboardAvoidingView>
@@ -502,6 +505,6 @@ export default function FoodDeliveryApp() {
         </Modal>
 
       </View>
-    </SafeAreaView>
+        </SafeAreaView>
   );
 }

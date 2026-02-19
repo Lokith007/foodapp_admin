@@ -186,6 +186,8 @@ function RootLayoutNav() {
   );
 }
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 /* -------------------- ROOT PROVIDER -------------------- */
 
 export default function Layout() {
@@ -200,8 +202,10 @@ export default function Layout() {
   if (!fontsLoaded) return null;
 
   return (
-    <ApolloProvider client={client}>
-      <RootLayoutNav />
-    </ApolloProvider>
+    <SafeAreaProvider>
+      <ApolloProvider client={client}>
+        <RootLayoutNav />
+      </ApolloProvider>
+    </SafeAreaProvider>
   );
 }

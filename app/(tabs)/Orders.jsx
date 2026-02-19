@@ -62,6 +62,8 @@ const RESTAURANT_SUBSCRIPTION = gql`
 
 /* ------------------ COMPONENT ------------------ */
 
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 const Orders = () => {
   const [view, setView] = useState('orders')
 
@@ -86,15 +88,23 @@ const Orders = () => {
     ],
   })
 
+  /* ------------------ DEBUG LOGS ------------------ */
+  console.log("--- ME QUERY DEBUG ---", { meData, meLoading, restaurantId });
+  console.log("--- ORDERS QUERY DEBUG ---", { data, loading, error });
+
   const orders = (data?.getCachedRestaurantOrders?.orders || []).filter(
     order => order.status !== 'pending'
   )
-  console.log(orders[0]?.createdAt);
-  
+  if (orders.length > 0) {
+    console.log("First Order Created At:", orders[0]?.createdAt);
+  } else {
+    console.log("No orders found or data is empty");
+  }
+
   /* ------------------ DISH AGGREGATION ------------------ */
 
   const dishStats = useMemo(() => {
-    const map: any = {}
+    const map = {}
 
     orders.forEach(order => {
       order.items.forEach(item => {
@@ -144,157 +154,159 @@ const Orders = () => {
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white" edges={['bottom', 'left', 'right']}>
+      <View className="flex-1">
 
-      {/* 🔥 HEADER */}
-      <View className="bg-orange-500 px-6 pt-14 pb-8 rounded-b-[32px]">
-        <Text className="text-orange-100 text-xs font-bold tracking-widest uppercase">
-          Restaurant Dashboard
-        </Text>
-        <Text className="text-white text-3xl font-extrabold mt-1">
-          Orders Overview
-        </Text>
-      </View>
+        {/* 🔥 HEADER */}
+        <SafeAreaView className="bg-orange-500 px-6 pt-4 pb-8 rounded-b-[32px]" edges={['top']}>
+          <Text className="text-orange-100 text-xs font-bold tracking-widest uppercase">
+            Restaurant Dashboard
+          </Text>
+          <Text className="text-white text-3xl font-extrabold mt-1">
+            Orders Overview
+          </Text>
+        </SafeAreaView>
 
-      {/* 🔘 TOGGLE */}
-      <View className="mx-5 mt-6 bg-orange-50 rounded-full p-1 flex-row">
-        <TouchableOpacity
-          onPress={() => setView('orders')}
-          className={`flex-1 py-3 rounded-full ${view === 'orders' ? 'bg-orange-500' : ''
-            }`}
-        >
-          <Text
-            className={`text-center font-semibold ${view === 'orders' ? 'text-white' : 'text-orange-600'
+        {/* 🔘 TOGGLE */}
+        <View className="mx-5 mt-6 bg-orange-50 rounded-full p-1 flex-row">
+          <TouchableOpacity
+            onPress={() => setView('orders')}
+            className={`flex-1 py-3 rounded-full ${view === 'orders' ? 'bg-orange-500' : ''
               }`}
           >
-            Orders
-          </Text>
-        </TouchableOpacity>
+            <Text
+              className={`text-center font-semibold ${view === 'orders' ? 'text-white' : 'text-orange-600'
+                }`}
+            >
+              Orders
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => setView('dishes')}
-          className={`flex-1 py-3 rounded-full ${view === 'dishes' ? 'bg-orange-500' : ''
-            }`}
-        >
-          <Text
-            className={`text-center font-semibold ${view === 'dishes' ? 'text-white' : 'text-orange-600'
+          <TouchableOpacity
+            onPress={() => setView('dishes')}
+            className={`flex-1 py-3 rounded-full ${view === 'dishes' ? 'bg-orange-500' : ''
               }`}
           >
-            Dish Summary
-          </Text>
-        </TouchableOpacity>
-      </View>
+            <Text
+              className={`text-center font-semibold ${view === 'dishes' ? 'text-white' : 'text-orange-600'
+                }`}
+            >
+              Dish Summary
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* 🍽 DISH SUMMARY */}
-      {view === 'dishes' && (
-        <FlatList
-          contentContainerStyle={{ padding: 20 }}
-          data={dishStats}
-          keyExtractor={item => item.dishId}
-          renderItem={({ item }) => (
-            <View className="flex-row bg-white mb-4 p-4 rounded-3xl shadow-sm border border-orange-100">
-              <Image
-                source={{ uri: item.imageUrl }}
-                className="w-16 h-16 rounded-2xl mr-4"
-              />
+        {/* 🍽 DISH SUMMARY */}
+        {view === 'dishes' && (
+          <FlatList
+            contentContainerStyle={{ padding: 20 }}
+            data={dishStats}
+            keyExtractor={item => item.dishId}
+            renderItem={({ item }) => (
+              <View className="flex-row bg-white mb-4 p-4 rounded-3xl shadow-sm border border-orange-100">
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  className="w-16 h-16 rounded-2xl mr-4"
+                />
 
-              <View className="flex-1">
-                <Text className="font-semibold text-gray-900 text-base">
-                  {item.dishName}
-                </Text>
-                <Text className="text-sm text-gray-500 mt-1">
-                  Orders: {item.orderCount}
-                </Text>
-              </View>
-
-              <View className="items-end justify-center">
-                <Text className="text-xl font-extrabold text-orange-500">
-                  × {item.totalQuantity}
-                </Text>
-                <Text className="text-xs text-gray-400">
-                  Total Qty
-                </Text>
-              </View>
-            </View>
-          )}
-        />
-      )}
-
-      {/* 📦 ORDERS */}
-      {view === 'orders' && (
-        <FlatList
-          contentContainerStyle={{ padding: 20 }}
-          data={orders}
-          keyExtractor={item => item.orderId.toString()}
-          renderItem={({ item }) => (
-            <View className="bg-white rounded-3xl p-5 mb-6 shadow-sm border border-gray-100">
-              <Text className="font-semibold text-gray-900 mb-3">
-                OrderId : {item.orderId}
-              </Text>
-              <Text className="font-semibold text-gray-900 mb-3">
-                Name : {item.userName}
-              </Text>
-              <Text className="text-xs text-gray-400 font-outfit-bold uppercase tracking-wider">
-                {new Date(Number(item.createdAt)).toLocaleString(undefined, {
-                  weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                })}
-              </Text>
-
-              {item.items.map((dish, idx) => (
-                <View
-                  key={idx}
-                  className="flex-row items-center mb-3 bg-gray-50 p-3 rounded-2xl"
-                >
-                  <Image
-                    source={{ uri: dish.imageUrl }}
-                    className="w-14 h-14 rounded-xl mr-3"
-                  />
-                  <View className="flex-1">
-                    <Text className="font-medium">
-                      {dish.dishName}
-                    </Text>
-                    <Text className="text-sm text-gray-500">
-                      ₹{dish.price} × {dish.quantity}
-                    </Text>
-                  </View>
+                <View className="flex-1">
+                  <Text className="font-semibold text-gray-900 text-base">
+                    {item.dishName}
+                  </Text>
+                  <Text className="text-sm text-gray-500 mt-1">
+                    Orders: {item.orderCount}
+                  </Text>
                 </View>
-              ))}
 
-              <Text className="text-right text-lg font-bold text-gray-900 mt-2">
-                ₹{item.total}
-              </Text>
-
-              {item.status === 'paid' && (
-                <TouchableOpacity
-                  onPress={() =>
-                    handleUpdateStatus(item.internalOrderId, item.status)
-                  }
-                  className="mt-4 bg-orange-500 py-3 rounded-2xl"
-                >
-                  <Text className="text-white text-center font-semibold">
-                    Mark as Done
+                <View className="items-end justify-center">
+                  <Text className="text-xl font-extrabold text-orange-500">
+                    × {item.totalQuantity}
                   </Text>
-                </TouchableOpacity>
-              )}
-
-              {item.status === 'done' && (
-                <TouchableOpacity
-                  onPress={() =>
-                    handleUpdateStatus(item.internalOrderId, item.status)
-                  }
-                  className="mt-4 bg-green-500 py-3 rounded-2xl"
-                >
-                  <Text className="text-white text-center font-semibold">
-                    Mark as Delivered
+                  <Text className="text-xs text-gray-400">
+                    Total Qty
                   </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-        />
-      )}
-    </View>
-  )
+                </View>
+              </View>
+            )}
+          />
+        )}
+
+        {/* 📦 ORDERS */}
+        {view === 'orders' && (
+          <FlatList
+            contentContainerStyle={{ padding: 20 }}
+            data={orders}
+            keyExtractor={item => item.orderId.toString()}
+            renderItem={({ item }) => (
+              <View className="bg-white rounded-3xl p-5 mb-6 shadow-sm border border-gray-100">
+                <Text className="font-semibold text-gray-900 mb-3">
+                  OrderId : {item.orderId}
+                </Text>
+                <Text className="font-semibold text-gray-900 mb-3">
+                  Name : {item.userName}
+                </Text>
+                <Text className="text-xs text-gray-400 font-outfit-bold uppercase tracking-wider">
+                  {new Date(Number(item.createdAt)).toLocaleString(undefined, {
+                    weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                  })}
+                </Text>
+
+                {item.items.map((dish, idx) => (
+                  <View
+                    key={idx}
+                    className="flex-row items-center mb-3 bg-gray-50 p-3 rounded-2xl"
+                  >
+                    <Image
+                      source={{ uri: dish.imageUrl }}
+                      className="w-14 h-14 rounded-xl mr-3"
+                    />
+                    <View className="flex-1">
+                      <Text className="font-medium">
+                        {dish.dishName}
+                      </Text>
+                      <Text className="text-sm text-gray-500">
+                        ₹{dish.price} × {dish.quantity}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+
+                <Text className="text-right text-lg font-bold text-gray-900 mt-2">
+                  ₹{item.total}
+                </Text>
+
+                {item.status === 'paid' && (
+                  <TouchableOpacity
+                    onPress={() =>
+                      handleUpdateStatus(item.internalOrderId, item.status)
+                    }
+                    className="mt-4 bg-orange-500 py-3 rounded-2xl"
+                  >
+                    <Text className="text-white text-center font-semibold">
+                      Mark as Done
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {item.status === 'done' && (
+                  <TouchableOpacity
+                    onPress={() =>
+                      handleUpdateStatus(item.internalOrderId, item.status)
+                    }
+                    className="mt-4 bg-green-500 py-3 rounded-2xl"
+                  >
+                    <Text className="text-white text-center font-semibold">
+                      Mark as Delivered
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          />
+        )}
+      </View>
+    </SafeAreaView>
+  );
 }
 
 export default Orders
