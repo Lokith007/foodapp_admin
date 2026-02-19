@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Picker } from '@react-native-picker/picker'
 
 const SIGN_UP = gql`
-  mutation SignUp($email: String!, $password: String!, $name: String!, $mobileNumber: String, $registerNumber: String, $batch: String, $department: String) {
+  mutation SignUp($email: String!, $password: String!, $name: String!, $mobileNumber: String!, $registerNumber: String!, $batch: String!, $department: String!) {
     signUp(email: $email, password: $password, name: $name, mobileNumber: $mobileNumber, registerNumber: $registerNumber, batch: $batch, department: $department) {
       token
       userId
@@ -57,10 +57,10 @@ export default function SignUp() {
         email: selectedRestaurant.login,
         name: selectedRestaurant.name,
         password,
-        mobileNumber: null,
-        registerNumber: null,
-        batch: null,
-        department: null,
+        mobileNumber: "mock",
+        registerNumber: "mock",
+        batch: "mock",
+        department: "mock",
       },
     })
   }
